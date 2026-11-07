@@ -1,0 +1,137 @@
+import os
+import base64
+import hashlib
+from typing import Tuple, Dict, Any
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.keywrap import InvalidUnwrap
+
+from app.core.security import wrap_dek, unwrap_dek
+
+class CryptographicError(Exception):
+    """Base exception for cryptographic failures."""
+    pass
+
+class CryptographicIntegrityError(CryptographicError):
+    """Raised when authentication tag or key unwrap integrity check fails (tampering/corruption)."""
+    pass
+
+class CryptoService:
+    @staticmethod
+    def calculate_sha256(data: bytes) -> str:
+        """Compute SHA-256 hex digest of data."""
+        hasher = hashlib.sha256()
+        hasher.update(data)
+        return hasher.hexdigest()
+
+    @staticmethod
+    def encrypt_bytes(data: bytes) -> Dict[str, Any]:
+        """
+        Encrypt arbitrary bytes using AES-256-GCM.
+        - Generates fresh 256-bit DEK
+        - Generates fresh 96-bit (12-byte) random nonce
+        - Authenticated encryption produces ciphertext + 128-bit tag
+        - Wraps DEK using server Master KEK (NIST AES Key Wrap)
+        - Computes SHA-256 checksum of plaintext
+        """
+        # 1. Generate unique 256-bit DEK per operation
+        dek = AESGCM.generate_key(bit_length=256)
+
+        # 2. Generate random 96-bit nonce
+        nonce = os.urandom(12)
+
+        # 3. Encrypt data with AES-256-GCM
+        aesgcm = AESGCM(dek)
+        ct_and_tag = aesgcm.encrypt(nonce, data, None)
+
+        ciphertext = ct_and_tag[:-16]
+        tag = ct_and_tag[-16:]
+
+        # 4. Wrap DEK with Server Master KEK
+        wrapped_dek = wrap_dek(dek)
+
+        # 5. Compute SHA-256 integrity hash of original data
+        sha256_hash = CryptoService.calculate_sha256(data)
+
+        return {
+            "ciphertext_bytes": ciphertext,
+            "nonce_bytes": nonce,
+            "tag_bytes": tag,
+            "wrapped_dek_bytes": wrapped_dek,
+            "sha256_hash": sha256_hash,
+            "plaintext_size": len(data),
+            "ciphertext_size": len(ciphertext),
+            "algorithm": "AES-256-GCM",
+        }
+
+    @staticmethod
+    def decrypt_bytes(
+        ciphertext: bytes,
+        nonce: bytes,
+        tag: bytes,
+        wrapped_dek: bytes,
+    ) -> bytes:
+        """
+        Decrypt ciphertext using wrapped DEK and AES-256-GCM authentication.
+        Raises CryptographicIntegrityError if authentication tag fails or key wrap is tampered.
+        """
+        # 1. Unwrap DEK using Server Master KEK
+        try:
+            dek = unwrap_dek(wrapped_dek)
+        except InvalidUnwrap as e:
+            raise CryptographicIntegrityError("Key unwrap failed: wrapped key is invalid or tampered") from e
+        except Exception as e:
+            raise CryptographicError(f"Failed to unwrap DEK: {str(e)}") from e
+
+        # 2. Reassemble ciphertext + 16-byte authentication tag
+        ct_and_tag = ciphertext + tag
+
+        # 3. Authenticate and decrypt with AES-256-GCM
+        try:
+            aesgcm = AESGCM(dek)
+            plaintext = aesgcm.decrypt(nonce, ct_and_tag, None)
+            return plaintext
+        except InvalidTag as e:
+            raise CryptographicIntegrityError(
+                "Authentication tag verification failed: data has been altered, tampered with, or corrupted"
+            ) from e
+        except Exception as e:
+            raise CryptographicError(f"Decryption failed: {str(e)}") from e
+
+    @staticmethod
+    def encrypt_text(text: str) -> Dict[str, str]:
+        """Encrypt UTF-8 string and return base64-encoded envelope components."""
+        data = text.encode("utf-8")
+        result = CryptoService.encrypt_bytes(data)
+        return {
+            "ciphertext": base64.b64encode(result["ciphertext_bytes"]).decode("ascii"),
+            "nonce": base64.b64encode(result["nonce_bytes"]).decode("ascii"),
+            "tag": base64.b64encode(result["tag_bytes"]).decode("ascii"),
+            "wrapped_dek": base64.b64encode(result["wrapped_dek_bytes"]).decode("ascii"),
+            "algorithm": result["algorithm"],
+            "sha256_hash": result["sha256_hash"],
+        }
+
+    @staticmethod
+    def decrypt_text(
+        ciphertext_b64: str,
+        nonce_b64: str,
+        tag_b64: str,
+        wrapped_dek_b64: str,
+    ) -> Tuple[str, str]:
+        """Decrypt base64-encoded ciphertext envelope and return UTF-8 string and SHA-256."""
+        try:
+            ciphertext = base64.b64decode(ciphertext_b64)
+            nonce = base64.b64decode(nonce_b64)
+            tag = base64.b64decode(tag_b64)
+            wrapped_dek = base64.b64decode(wrapped_dek_b64)
+        except Exception as e:
+            raise CryptographicError("Invalid base64 encoding in cryptographic payload") from e
+
+        plaintext_bytes = CryptoService.decrypt_bytes(ciphertext, nonce, tag, wrapped_dek)
+        sha256_hash = CryptoService.calculate_sha256(plaintext_bytes)
+
+        try:
+            return plaintext_bytes.decode("utf-8"), sha256_hash
+        except UnicodeDecodeError as e:
+            raise CryptographicError("Decrypted bytes are not valid UTF-8 text") from e

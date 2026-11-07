@@ -1,5 +1,6 @@
 import React from 'react';
 import { Shield, KeyRound, Lock } from 'lucide-react';
+import { Link } from '../../router';
 
 interface FooterProps {
   onOpenPrivacyModal: () => void;
@@ -73,6 +74,16 @@ export const Footer: React.FC<FooterProps> = ({
                 <a href="#about" className="hover:text-[#00D4FF] transition-colors">
                   About CryptX
                 </a>
+              </li>
+              <li className="pt-1 border-t border-[#1E293B]/60">
+                <Link to="/login" className="hover:text-[#00D4FF] transition-colors font-medium">
+                  Vault Sign In
+                </Link>
+              </li>
+              <li>
+                <Link to="/register" className="hover:text-[#00D4FF] transition-colors font-medium">
+                  Create Vault Account
+                </Link>
               </li>
             </ul>
           </div>

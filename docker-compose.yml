@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cryptx_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cryptx_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in root .env}
+      POSTGRES_DB: ${POSTGRES_DB:-cryptx}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cryptx_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      PROJECT_NAME: "CryptX Backend"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cryptx_user}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in root .env}@db:5432/${POSTGRES_DB:-cryptx}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in root .env}
+      CRYPTX_MASTER_KEY: ${CRYPTX_MASTER_KEY:?Set CRYPTX_MASTER_KEY in root .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      STORAGE_DIR: /app/storage/uploads
+    volumes:
+      - backend_storage:/app/storage/uploads
+
+volumes:
+  postgres_data:
+  backend_storage:

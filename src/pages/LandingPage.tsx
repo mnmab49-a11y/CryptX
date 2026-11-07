@@ -9,18 +9,11 @@ import { Footer } from '../components/layout/Footer';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { FeatureItem } from '../types';
-import { Lock, Key, Info, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Key, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from '../router';
 
 export const LandingPage: React.FC = () => {
-  // Modal states
-  const [authModalState, setAuthModalState] = useState<{
-    isOpen: boolean;
-    mode: 'login' | 'signup';
-  }>({
-    isOpen: false,
-    mode: 'login',
-  });
-
+  const navigate = useNavigate();
   const [selectedFeature, setSelectedFeature] = useState<FeatureItem | null>(null);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
@@ -36,14 +29,12 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#080B12] text-[#F8FAFC] flex flex-col font-sans bg-grid-pattern selection:bg-[#00D4FF]/20 selection:text-[#00D4FF]">
       {/* Top Navigation */}
-      <Navbar
-        onOpenAuthModal={(mode) => setAuthModalState({ isOpen: true, mode })}
-      />
+      <Navbar />
 
       {/* Main Content Sections */}
       <main className="flex-grow">
         <HeroSection
-          onGetStarted={() => setAuthModalState({ isOpen: true, mode: 'signup' })}
+          onGetStarted={() => navigate('/register')}
           onExploreFeatures={() => scrollToSection('features')}
         />
 
@@ -64,85 +55,7 @@ export const LandingPage: React.FC = () => {
         onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
       />
 
-      {/* --- Interactive Modals (Meaningful Phase 1 Feedback) --- */}
-
-      {/* Authentication Gateway Preview Modal */}
-      <Modal
-        isOpen={authModalState.isOpen}
-        onClose={() => setAuthModalState({ ...authModalState, isOpen: false })}
-        title={authModalState.mode === 'login' ? 'Account Authentication' : 'Create Secure CryptX Workspace'}
-        subtitle={
-          authModalState.mode === 'login'
-            ? 'Access your encrypted storage vault and key credentials'
-            : 'Initialize your cryptographic profile with master key isolation'
-        }
-        maxWidth="md"
-      >
-        <div className="space-y-4">
-          <div className="p-3 rounded-lg bg-[#141D2B] border border-[#1E293B] flex items-start gap-3">
-            <Info className="w-5 h-5 text-[#00D4FF] shrink-0 mt-0.5" />
-            <div className="text-xs text-[#94A3B8]">
-              <strong className="text-[#F8FAFC]">Phase 1 Architecture Status:</strong> The frontend foundation is fully active. Live JWT token issuance and PostgreSQL backend authentication will connect in Phase 2 via Python FastAPI.
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-mono uppercase text-[#94A3B8] mb-1">
-                Security Identifier / Email
-              </label>
-              <input
-                type="email"
-                placeholder="architect@domain.com"
-                readOnly
-                value="demo.engineer@cryptx-vault.internal"
-                className="w-full px-3.5 py-2.5 rounded-lg bg-[#080B12] border border-[#1E293B] text-[#F8FAFC] font-mono text-sm focus:outline-none focus:border-[#00D4FF] cursor-not-allowed"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono uppercase text-[#94A3B8] mb-1">
-                Passphrase / Master Secret
-              </label>
-              <div className="relative">
-                <input
-                  type="password"
-                  placeholder="••••••••••••••••••••••••"
-                  readOnly
-                  value="DemoSecureKeyDerivation2026!"
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#080B12] border border-[#1E293B] text-[#F8FAFC] font-mono text-sm focus:outline-none focus:border-[#00D4FF] cursor-not-allowed"
-                />
-                <Lock className="w-4 h-4 text-[#94A3B8] absolute right-3 top-3" />
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1 font-mono">
-                Planned KEK: 256-bit PBKDF2 with 100,000+ iterations
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-2 flex flex-col gap-2">
-            <Button
-              variant="primary"
-              size="md"
-              className="w-full"
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-              onClick={() => {
-                alert('Phase 1 Notice: Frontend foundation initialized successfully. Full FastAPI backend authentication service will be connected in Phase 2.');
-                setAuthModalState({ ...authModalState, isOpen: false });
-              }}
-            >
-              {authModalState.mode === 'login' ? 'Proceed to Workspace Preview' : 'Initialize Vault Profile'}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAuthModalState({ ...authModalState, isOpen: false })}
-            >
-              Close Window
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {/* --- Informational Modals --- */}
 
       {/* Feature Technical Specification Modal */}
       {selectedFeature && (

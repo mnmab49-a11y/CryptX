@@ -1,0 +1,247 @@
+import React, { useState } from 'react';
+import {
+  KeyRound,
+  Key,
+  RotateCcw,
+  ShieldCheck,
+  Lock,
+  Cpu,
+  Layers,
+  Info,
+  AlertTriangle,
+  RefreshCw
+} from 'lucide-react';
+import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
+import { Modal } from '../../components/ui/Modal';
+
+export const KeysPage: React.FC = () => {
+  const [rotationModalOpen, setRotationModalOpen] = useState(false);
+  const [recoveryModalOpen, setRecoveryModalOpen] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  const handleSimulateRotation = () => {
+    setRotationModalOpen(false);
+    setActionNotice(
+      'Key rotation request staged. In Phase 4, the KMS service will generate a new Key Encryption Key (KEK) and re-wrap all active Data Encryption Keys (DEKs) via envelope cryptography.'
+    );
+  };
+
+  return (
+    <DashboardLayout
+      pageTitle="Cryptographic Key Hierarchy & Lifecycle"
+      pageDescription="Envelope encryption architecture, key wrapping isolation, and rotation policies."
+      breadcrumbs={['Security', 'Key Management']}
+    >
+      <div className="space-y-6 text-left max-w-6xl">
+        {/* Architecture Notice Banner */}
+        <div className="p-4 rounded-xl bg-[#141D2B] border border-[#1E293B] flex items-start gap-3 text-xs text-[#94A3B8]">
+          <Info className="w-5 h-5 text-[#00D4FF] shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <strong className="text-[#F8FAFC] block mb-0.5 font-mono">
+              Envelope Cryptography Specification (Frontend Phase 3):
+            </strong>
+            No live cryptographic keys are generated, stored, or revealed in this frontend interface. The schema below documents the target Cloud KMS and PBKDF2 envelope derivation model scheduled for backend implementation in Phase 4.
+          </div>
+        </div>
+
+        {/* Action Notice */}
+        {actionNotice && (
+          <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-start gap-2.5 text-xs text-blue-300 font-mono">
+            <ShieldCheck className="w-4 h-4 text-[#00D4FF] shrink-0 mt-0.5" />
+            <span>{actionNotice}</span>
+          </div>
+        )}
+
+        {/* Visual Key Hierarchy Architecture */}
+        <Card className="p-6 bg-[#101622] border-[#1E293B] space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#1E293B] gap-2">
+            <div>
+              <h3 className="text-base font-bold text-[#F8FAFC] flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#00D4FF]" />
+                Envelope Encryption Hierarchy (NIST SP 800-57)
+              </h3>
+              <p className="text-xs text-[#94A3B8]">
+                Multi-tier separation prevents master credentials from directly exposing bulk payload ciphers.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+                onClick={() => setRotationModalOpen(true)}
+              >
+                Rotate KEK
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<Key className="w-3.5 h-3.5 text-amber-400" />}
+                onClick={() => setRecoveryModalOpen(true)}
+              >
+                Recovery Keys
+              </Button>
+            </div>
+          </div>
+
+          {/* 3 Tier Key Cards Diagram */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+            {/* Tier 1: Master Key */}
+            <div className="p-5 rounded-xl bg-[#141D2B] border border-[#1E293B] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-[#00D4FF] uppercase tracking-wider font-bold">
+                  Tier 1 &bull; Master Secret
+                </span>
+                <Badge variant="cyan" size="sm">User Boundary</Badge>
+              </div>
+              <h4 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-[#00D4FF]" />
+                Master Key (MK)
+              </h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Derived directly from user credentials using <strong>PBKDF2-HMAC-SHA256</strong> with 100,000+ iterations and high-entropy salt.
+              </p>
+              <div className="pt-2 border-t border-[#1E293B]/60 text-[11px] font-mono text-slate-400">
+                Isolation: Client RAM Only &bull; Never Persisted
+              </div>
+            </div>
+
+            {/* Tier 2: Key Encryption Key (KEK) */}
+            <div className="p-5 rounded-xl bg-[#141D2B] border border-[#3B82F6]/40 space-y-3 relative shadow-[0_0_15px_-3px_rgba(59,130,246,0.15)]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-[#3B82F6] uppercase tracking-wider font-bold">
+                  Tier 2 &bull; Wrapping Layer
+                </span>
+                <Badge variant="blue" size="sm">Cloud KMS</Badge>
+              </div>
+              <h4 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#3B82F6]" />
+                Key Encryption Key (KEK)
+              </h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Wraps and unwraps Data Encryption Keys (DEKs). Enables instantaneous <strong>key rotation</strong> without re-encrypting raw files.
+              </p>
+              <div className="pt-2 border-t border-[#1E293B]/60 text-[11px] font-mono text-[#60A5FA]">
+                Algorithm: AES-256 Key Wrap (RFC 3394)
+              </div>
+            </div>
+
+            {/* Tier 3: Data Encryption Key (DEK) */}
+            <div className="p-5 rounded-xl bg-[#141D2B] border border-[#1E293B] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider font-bold">
+                  Tier 3 &bull; Payload Sealing
+                </span>
+                <Badge variant="emerald" size="sm">Per-Object</Badge>
+              </div>
+              <h4 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-emerald-400" />
+                Data Encryption Key (DEK)
+              </h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Unique 256-bit symmetric key generated per payload. Encrypts documents, text, and images via <strong>AES-256-GCM</strong>.
+              </p>
+              <div className="pt-2 border-t border-[#1E293B]/60 text-[11px] font-mono text-emerald-400">
+                Encapsulation: Sealed inside object header
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Detailed Concepts Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Key Rotation Explanation */}
+          <Card className="p-6 bg-[#101622] border-[#1E293B] space-y-3">
+            <div className="flex items-center gap-2 text-base font-bold text-[#F8FAFC]">
+              <RotateCcw className="w-4 h-4 text-[#00D4FF]" />
+              How Key Rotation Protects You
+            </div>
+            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+              When a security team rotates cryptographic keys, re-encrypting gigabytes of cloud storage would be cost-prohibitive and dangerous.
+            </p>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              With envelope encryption, only the <strong>Key Encryption Key (KEK)</strong> is regenerated. The wrapped DEKs stored in object headers are re-wrapped under the new KEK. The underlying multi-gigabyte ciphertexts remain untouched and completely secure.
+            </p>
+            <div className="p-3 rounded-lg bg-[#080B12] border border-[#1E293B] text-[11px] font-mono text-slate-300">
+              Zero Downtime &bull; Sub-Second Envelope Rotation
+            </div>
+          </Card>
+
+          {/* Key Recovery Explanation */}
+          <Card className="p-6 bg-[#101622] border-[#1E293B] space-y-3">
+            <div className="flex items-center gap-2 text-base font-bold text-[#F8FAFC]">
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              Sovereign Key Recovery Philosophy
+            </div>
+            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+              Because CryptX never stores your master password in plaintext, conventional &ldquo;reset my password&rdquo; email links cannot decrypt your files.
+            </p>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              Account recovery relies upon an emergency <strong>Recovery Kit</strong> generated during vault initialization, utilizing split-key secret sharing so you retain total custody over your assets.
+            </p>
+            <div className="p-3 rounded-lg bg-[#080B12] border border-[#1E293B] text-[11px] font-mono text-slate-300">
+              Zero-Knowledge &bull; Mathematical Proof of Ownership
+            </div>
+          </Card>
+        </div>
+
+        {/* Key Rotation Simulation Modal */}
+        <Modal
+          isOpen={rotationModalOpen}
+          onClose={() => setRotationModalOpen(false)}
+          title="Rotate Key Encryption Key (KEK)"
+          subtitle="Envelope Cryptography Lifecycle Workflow"
+          maxWidth="md"
+        >
+          <div className="space-y-4 text-xs text-[#94A3B8] leading-relaxed">
+            <p>
+              Initiating a KEK rotation will request a new 256-bit wrapping key from the KMS vault and re-wrap the 12 active Data Encryption Keys in your registry.
+            </p>
+            <div className="p-3 rounded-lg bg-[#080B12] border border-[#1E293B] space-y-1 font-mono text-[11px] text-slate-300">
+              <div>Target: Vault KEK #2 &rarr; Vault KEK #3</div>
+              <div>Estimated Operations: 12 DEK re-wraps</div>
+              <div>Estimated Time: ~45 ms</div>
+            </div>
+            <div className="pt-2 flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setRotationModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleSimulateRotation}>
+                Execute Rotation Simulation
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Recovery Key Modal */}
+        <Modal
+          isOpen={recoveryModalOpen}
+          onClose={() => setRecoveryModalOpen(false)}
+          title="Vault Emergency Recovery Kit"
+          subtitle="Cryptographic Disaster Recovery Parameters"
+          maxWidth="md"
+        >
+          <div className="space-y-4 text-xs text-[#94A3B8] leading-relaxed">
+            <div className="p-3 rounded-lg bg-[#141D2B] border border-amber-500/30 flex items-start gap-2.5 text-amber-300">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                Keep recovery parameters stored offline in a secure physical location or air-gapped device.
+              </span>
+            </div>
+            <p>
+              In Phase 4, your Recovery Kit will export a 24-word cryptographic BIP-39 mnemonic seed capable of reconstructing your Master Key in the event of credential loss.
+            </p>
+            <div className="pt-2 flex justify-end">
+              <Button variant="secondary" size="sm" onClick={() => setRecoveryModalOpen(false)}>
+                Understood
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    </DashboardLayout>
+  );
+};

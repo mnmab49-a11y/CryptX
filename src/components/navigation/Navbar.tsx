@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Shield, KeyRound, Menu, X, ArrowRight, Lock } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { NavItem } from '../../types';
+import { Link, useNavigate } from '../../router';
 
 interface NavbarProps {
-  onOpenAuthModal: (mode: 'login' | 'signup') => void;
+  onOpenAuthModal?: (mode: 'login' | 'signup') => void;
 }
 
 const navItems: NavItem[] = [
@@ -18,6 +19,7 @@ const navItems: NavItem[] = [
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,6 +29,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLoginClick = () => {
+    if (onOpenAuthModal) {
+      navigate('/login');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleRegisterClick = () => {
+    navigate('/register');
+  };
 
   return (
     <header
@@ -39,8 +53,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Brand Logo */}
-          <a
-            href="#hero"
+          <Link
+            to="/"
             className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-[#00D4FF] rounded-lg p-1"
           >
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#101622] to-[#141D2B] border border-[#1E293B] group-hover:border-[#00D4FF]/50 transition-colors shadow-inner">
@@ -60,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
                 Secure Platform
               </span>
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-1 lg:gap-2">
@@ -77,11 +91,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
 
           {/* CTA Actions */}
           <div className="hidden md:flex items-center gap-3">
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-[#00D4FF] hover:bg-[#00D4FF]/10 rounded-lg border border-[#00D4FF]/25 transition-colors"
+            >
+              <span>Vault Console</span>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
               leftIcon={<Lock className="w-4 h-4 text-[#94A3B8]" />}
-              onClick={() => onOpenAuthModal('login')}
+              onClick={handleLoginClick}
             >
               Login
             </Button>
@@ -89,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
               variant="primary"
               size="sm"
               rightIcon={<ArrowRight className="w-4 h-4" />}
-              onClick={() => onOpenAuthModal('signup')}
+              onClick={handleRegisterClick}
             >
               Get Started
             </Button>
@@ -129,13 +149,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
             ))}
           </nav>
           <div className="pt-3 border-t border-[#1E293B] flex flex-col gap-2.5">
+            <Link
+              to="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full py-2.5 text-center text-xs font-mono font-semibold rounded-lg bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/25"
+            >
+              Enter Vault Console
+            </Link>
             <Button
               variant="secondary"
               size="md"
               className="w-full justify-center"
               onClick={() => {
                 setMobileMenuOpen(false);
-                onOpenAuthModal('login');
+                handleLoginClick();
               }}
             >
               Login
@@ -147,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
               rightIcon={<ArrowRight className="w-4 h-4" />}
               onClick={() => {
                 setMobileMenuOpen(false);
-                onOpenAuthModal('signup');
+                handleRegisterClick();
               }}
             >
               Get Started
