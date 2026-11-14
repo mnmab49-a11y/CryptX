@@ -1,1 +1,0 @@
-feat: implement chunked AAD binding, .cptx and .img.cptx containers, versioned 1.0 JSON text envelope, cryptographic algorithm matrix and 33 passing tests
