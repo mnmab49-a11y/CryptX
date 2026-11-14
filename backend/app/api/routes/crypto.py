@@ -266,13 +266,14 @@ def decrypt_file(
 @router.get("/files/{file_id}/carrier")
 def download_carrier_image(
     file_id: str,
+    style: str = "scenic",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
     Download the encrypted asset packaged inside a valid, viewable Steganographic Carrier PNG image.
     - For documents: Generates a sleek dark cybersecurity Vault Asset Carrier Badge PNG.
-    - For images: Generates a visual cryptographic cipher noise image PNG.
+    - For images: Generates a completely different decoy cover image (scenic landscape, cyber grid, or noise).
     """
     db_file = db.query(EncryptedFile).filter(
         EncryptedFile.id == file_id,
@@ -303,11 +304,12 @@ def download_carrier_image(
     envelope_bytes = json.dumps(envelope).encode("utf-8")
 
     if db_file.category == "image":
-        carrier_bytes = steganography_service.create_image_cipher_carrier(
+        carrier_bytes = steganography_service.create_image_decoy_carrier(
             original_filename=db_file.original_filename,
             encrypted_payload=envelope_bytes,
+            style=style,
         )
-        carrier_filename = f"{db_file.original_filename}.img.cptx.png"
+        carrier_filename = f"{db_file.original_filename}.carrier.png"
     else:
         carrier_bytes = steganography_service.create_file_carrier_image(
             original_filename=db_file.original_filename,
@@ -315,7 +317,7 @@ def download_carrier_image(
             sha256_hash=db_file.sha256_hash,
             encrypted_payload=envelope_bytes,
         )
-        carrier_filename = f"{db_file.original_filename}.cptx.png"
+        carrier_filename = f"{db_file.original_filename}.carrier.png"
 
     headers = {
         "Content-Disposition": f'attachment; filename="{carrier_filename}"',

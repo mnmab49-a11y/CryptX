@@ -13,7 +13,9 @@ import {
   AlertCircle,
   Key,
   Eye,
-  EyeOff
+  EyeOff,
+  Download,
+  Sparkles
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { Card } from '../../components/ui/Card';
@@ -130,6 +132,38 @@ export const EncryptTextPage: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleGenerateKey = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
+    let key = '';
+    const array = new Uint8Array(24);
+    window.crypto.getRandomValues(array);
+    array.forEach((byte) => {
+      key += chars[byte % chars.length];
+    });
+    setCustomKey(key);
+    setShowCustomKey(true);
+    setKeyMode('custom');
+  };
+
+  const handleFillSample = () => {
+    setInputText(
+      'CONFIDENTIAL REPORT: Project CryptX cloud infrastructure deployment credentials & database connection parameters.'
+    );
+  };
+
+  const handleDownloadEnvelope = () => {
+    if (!outputResult) return;
+    const blob = new Blob([outputResult], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cryptx_payload.cptx.json';
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   const handleClear = () => {
     setInputText('');
     setOutputResult('');
@@ -181,9 +215,20 @@ export const EncryptTextPage: React.FC = () => {
                   <FileCode className="w-4 h-4 text-[#00D4FF]" />
                   <span className="text-sm font-bold text-[#F8FAFC]">Payload Input Editor</span>
                 </div>
-                <span className="text-xs font-mono text-[#94A3B8]">
-                  {inputText.length} chars &bull; {inputText.split(/\s+/).filter(Boolean).length} words
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleFillSample}
+                    className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#141D2B] text-[#00D4FF] hover:bg-[#1E293B] border border-[#1E293B] flex items-center gap-1 transition-colors"
+                    title="Insert sample text to test"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Sample Text</span>
+                  </button>
+                  <span className="text-xs font-mono text-[#94A3B8]">
+                    {inputText.length} chars
+                  </span>
+                </div>
               </div>
 
               {/* Textarea */}
@@ -233,21 +278,32 @@ export const EncryptTextPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Custom Key Input (Shown when custom key mode is active or user wants to specify key for decrypt) */}
+              {/* Custom Key Input */}
               <div className="p-3.5 rounded-xl bg-[#080B12] border border-[#1E293B] space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-mono text-emerald-400 font-bold flex items-center gap-1.5">
                     <Key className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Custom Secret Key / Passphrase {keyMode === 'server' ? '(Optional for Decrypt)' : '(Required)'}:</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomKey(!showCustomKey)}
-                    className="text-[#94A3B8] hover:text-[#F8FAFC] text-xs font-mono flex items-center gap-1"
-                  >
-                    {showCustomKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    <span>{showCustomKey ? 'Hide' : 'Show'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleGenerateKey}
+                      className="text-emerald-400 hover:text-emerald-300 text-xs font-mono flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20"
+                      title="Generate a random secure key"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Generate Key</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomKey(!showCustomKey)}
+                      className="text-[#94A3B8] hover:text-[#F8FAFC] text-xs font-mono flex items-center gap-1"
+                    >
+                      {showCustomKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showCustomKey ? 'Hide' : 'Show'}</span>
+                    </button>
+                  </div>
                 </div>
                 <input
                   type={showCustomKey ? 'text' : 'password'}
@@ -305,13 +361,23 @@ export const EncryptTextPage: React.FC = () => {
                   <span className="text-sm font-bold text-[#F8FAFC]">Output Ledger</span>
                 </div>
                 {outputResult && (
-                  <button
-                    onClick={handleCopy}
-                    className="inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded bg-[#141D2B] text-[#00D4FF] hover:bg-[#1E293B] border border-[#1E293B] transition-colors"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Copied' : 'Copy Result'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDownloadEnvelope}
+                      className="inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded bg-[#141D2B] text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#1E293B] border border-[#1E293B] transition-colors"
+                      title="Download as .cptx.json"
+                    >
+                      <Download className="w-3.5 h-3.5 text-[#00D4FF]" />
+                      <span>Download JSON</span>
+                    </button>
+                    <button
+                      onClick={handleCopy}
+                      className="inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded bg-[#141D2B] text-[#00D4FF] hover:bg-[#1E293B] border border-[#1E293B] transition-colors"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copied ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
                 )}
               </div>
 

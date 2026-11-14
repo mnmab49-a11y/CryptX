@@ -412,12 +412,13 @@ class ApiService {
     return { blob, filename };
   }
 
-  async downloadCarrierImageBlob(fileId: string): Promise<{ blob: Blob; filename: string }> {
+  async downloadCarrierImageBlob(fileId: string, style?: string): Promise<{ blob: Blob; filename: string }> {
     if (!API_BASE_URL) {
       throw new Error('CryptX Backend API is not configured.');
     }
 
-    const url = `${API_BASE_URL}/crypto/files/${fileId}/carrier`;
+    const params = style ? `?style=${encodeURIComponent(style)}` : '';
+    const url = `${API_BASE_URL}/crypto/files/${fileId}/carrier${params}`;
     const token = this.getToken();
     const headers = new Headers();
     if (token) {

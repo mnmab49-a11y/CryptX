@@ -34,6 +34,7 @@ export const EncryptFilesPage: React.FC = () => {
     message: null,
     error: null,
   });
+  const [carrierPreviewUrl, setCarrierPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -83,10 +84,29 @@ export const EncryptFilesPage: React.FC = () => {
       if (mode === 'encrypt') {
         const item = await api.encryptFile(selectedFile, 'document');
         setSavedVaultItem(item);
+
+        // Auto-generate, display, and download the Carrier Image (.png)
+        let carrierFilename = `${selectedFile.name}.carrier.png`;
+        try {
+          const { blob, filename } = await api.downloadCarrierImageBlob(item.id);
+          carrierFilename = filename;
+          const cUrl = window.URL.createObjectURL(blob);
+          setCarrierPreviewUrl(cUrl);
+
+          const a = document.createElement('a');
+          a.href = cUrl;
+          a.download = carrierFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (cErr) {
+          console.warn('Auto carrier download error:', cErr);
+        }
+
         setOperationState({
           inProgress: false,
           completed: true,
-          message: `"${selectedFile.name}" encrypted with AES-256-GCM. Stored in vault & ready for Carrier Image download. SHA-256: ${item.sha256_hash.substring(0, 16)}...`,
+          message: `"${selectedFile.name}" encrypted with AES-256-GCM! The Encrypted Carrier Image "${carrierFilename}" has been downloaded. Your original file is safely sealed inside this PNG. To decrypt, upload this PNG into Decrypt mode.`,
           error: null,
         });
       } else {
@@ -180,6 +200,7 @@ export const EncryptFilesPage: React.FC = () => {
   const handleReset = () => {
     setSelectedFile(null);
     setSavedVaultItem(null);
+    setCarrierPreviewUrl(null);
     setOperationState({ inProgress: false, completed: false, message: null, error: null });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -332,6 +353,29 @@ export const EncryptFilesPage: React.FC = () => {
                   {operationState.completed ? 'Vault Secured' : 'Standby'}
                 </Badge>
               </div>
+
+              {/* Carrier Image Visual Preview */}
+              {carrierPreviewUrl && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono text-[#00D4FF]">
+                    <span className="flex items-center gap-1.5 font-bold">
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      Generated Carrier Image (.png)
+                    </span>
+                    <Badge variant="cyan" size="sm">Image Polyglot</Badge>
+                  </div>
+                  <div className="rounded-xl overflow-hidden border border-[#00D4FF]/40 bg-[#080B12] shadow-lg">
+                    <img
+                      src={carrierPreviewUrl}
+                      alt="Encrypted Carrier"
+                      className="w-full h-auto object-cover max-h-48"
+                    />
+                  </div>
+                  <p className="text-[11px] text-[#94A3B8] leading-tight">
+                    This viewable PNG securely contains the encrypted payload. To restore the file, upload this PNG into Decrypt mode.
+                  </p>
+                </div>
+              )}
 
               {/* Result Preview Box */}
               <div className="p-4 rounded-xl bg-[#080B12] border border-[#1E293B] space-y-3 font-mono text-xs">

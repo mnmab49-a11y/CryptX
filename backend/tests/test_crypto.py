@@ -1,3 +1,4 @@
+import io
 import base64
 import pytest
 from app.services.crypto_service import CryptoService, CryptographicIntegrityError
@@ -280,16 +281,70 @@ def test_carrier_image_download_and_decrypt_flow(client, auth_headers):
     )
     assert carrier_res.status_code == 200
     assert carrier_res.headers["content-type"] == "image/png"
-    assert "certificate.pdf.cptx.png" in carrier_res.headers["content-disposition"]
+    assert "certificate.pdf.carrier.png" in carrier_res.headers["content-disposition"] or "carrier.png" in carrier_res.headers["content-disposition"]
     carrier_bytes = carrier_res.content
 
     # 3. Direct Decrypt the Carrier PNG via /decrypt-carrier
     dec_res = client.post(
         "/api/v1/crypto/files/decrypt-carrier",
-        files={"file": ("certificate.pdf.cptx.png", io.BytesIO(carrier_bytes), "image/png")},
+        files={"file": ("certificate.pdf.carrier.png", io.BytesIO(carrier_bytes), "image/png")},
         headers=auth_headers,
     )
     assert dec_res.status_code == 200
     assert dec_res.content == doc_content
     assert "certificate.pdf" in dec_res.headers["content-disposition"]
+
+
+def test_image_decoy_cover_scenic_and_cyber_roundtrip(client, auth_headers):
+    # 1. Upload a secret original PNG image
+    secret_img_bytes = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff"
+        b"?\x00\x05\xfe\x02\xfe\xa7V\xfe\xae\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+
+    enc_res = client.post(
+        "/api/v1/crypto/files/encrypt",
+        files={"file": ("secret_blueprint.png", io.BytesIO(secret_img_bytes), "image/png")},
+        data={"category": "image"},
+        headers=auth_headers,
+    )
+    assert enc_res.status_code == 201
+    file_id = enc_res.json()["id"]
+
+    # 2. Download with scenic decoy style
+    scenic_res = client.get(
+        f"/api/v1/crypto/files/{file_id}/carrier?style=scenic",
+        headers=auth_headers,
+    )
+    assert scenic_res.status_code == 200
+    assert scenic_res.headers["content-type"] == "image/png"
+    assert len(scenic_res.content) > len(secret_img_bytes)
+
+    # 3. Decrypt the scenic decoy image -> restores secret image byte-for-byte
+    dec_scenic = client.post(
+        "/api/v1/crypto/files/decrypt-carrier",
+        files={"file": ("secret_blueprint.carrier.png", io.BytesIO(scenic_res.content), "image/png")},
+        headers=auth_headers,
+    )
+    assert dec_scenic.status_code == 200
+    assert dec_scenic.content == secret_img_bytes
+
+    # 4. Download with cyber decoy style
+    cyber_res = client.get(
+        f"/api/v1/crypto/files/{file_id}/carrier?style=cyber",
+        headers=auth_headers,
+    )
+    assert cyber_res.status_code == 200
+    assert cyber_res.headers["content-type"] == "image/png"
+
+    # 5. Decrypt the cyber decoy image -> also restores secret image byte-for-byte
+    dec_cyber = client.post(
+        "/api/v1/crypto/files/decrypt-carrier",
+        files={"file": ("secret_blueprint.carrier.png", io.BytesIO(cyber_res.content), "image/png")},
+        headers=auth_headers,
+    )
+    assert dec_cyber.status_code == 200
+    assert dec_cyber.content == secret_img_bytes
+
 

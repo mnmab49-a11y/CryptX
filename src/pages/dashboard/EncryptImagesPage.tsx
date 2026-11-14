@@ -7,7 +7,8 @@ import {
   Info,
   ShieldCheck,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { Card } from '../../components/ui/Card';
@@ -23,6 +24,7 @@ export const EncryptImagesPage: React.FC = () => {
   const [savedVaultItem, setSavedVaultItem] = useState<VaultFileItem | null>(null);
   const [decryptedPreviewUrl, setDecryptedPreviewUrl] = useState<string | null>(null);
   const [cipherPreviewUrl, setCipherPreviewUrl] = useState<string | null>(null);
+  const [coverStyle, setCoverStyle] = useState<'scenic' | 'cyber' | 'noise'>('scenic');
   const [operationState, setOperationState] = useState<{
     inProgress: boolean;
     completed: boolean;
@@ -105,15 +107,28 @@ export const EncryptImagesPage: React.FC = () => {
       if (mode === 'encrypt') {
         const item = await api.encryptFile(selectedImage, 'image');
         setSavedVaultItem(item);
+        let decoyFilename = `${selectedImage.name.replace(/\.[^/.]+$/, '')}.carrier.png`;
         try {
-          const { blob } = await api.downloadCarrierImageBlob(item.id);
+          const { blob, filename } = await api.downloadCarrierImageBlob(item.id, coverStyle);
+          decoyFilename = filename;
           const cUrl = URL.createObjectURL(blob);
           setCipherPreviewUrl(cUrl);
-        } catch {}
+
+          // Auto-download the Decoy Cover picture to disk
+          const a = document.createElement('a');
+          a.href = cUrl;
+          a.download = decoyFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (cErr) {
+          console.warn('Auto carrier download error:', cErr);
+        }
+
         setOperationState({
           inProgress: false,
           completed: true,
-          message: `Image "${selectedImage.name}" encrypted into Visual Cipher. Stored in vault & available as Visual Cipher PNG.`,
+          message: `Secret image "${selectedImage.name}" encrypted with AES-256-GCM! The new Decoy Cover Image "${decoyFilename}" was downloaded. Opening this file displays the decoy picture; uploading it to Decrypt restores the original photo losslessly!`,
           error: null,
         });
       } else {
@@ -131,7 +146,7 @@ export const EncryptImagesPage: React.FC = () => {
           setOperationState({
             inProgress: false,
             completed: true,
-            message: `Visual Cipher Image decrypted! Restored original asset "${filename}" losslessly.`,
+            message: `Decoy Cover Image decrypted! Restored original secret photo "${filename}" losslessly with 100% SHA-256 match.`,
             error: null,
           });
           return;
@@ -174,7 +189,7 @@ export const EncryptImagesPage: React.FC = () => {
   const handleDownloadVisualCipher = async () => {
     if (!savedVaultItem) return;
     try {
-      const { blob, filename } = await api.downloadCarrierImageBlob(savedVaultItem.id);
+      const { blob, filename } = await api.downloadCarrierImageBlob(savedVaultItem.id, coverStyle);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -185,12 +200,12 @@ export const EncryptImagesPage: React.FC = () => {
       document.body.removeChild(a);
       setOperationState((prev) => ({
         ...prev,
-        message: `Visual Cipher Image "${filename}" downloaded! Displays as an encrypted canvas; decrypts back to original.`,
+        message: `Decoy Cover Image "${filename}" downloaded! Displays as a viewable picture; decrypts back to your original photo.`,
       }));
     } catch (err: any) {
       setOperationState((prev) => ({
         ...prev,
-        error: err.message || 'Cipher image download failed',
+        error: err.message || 'Decoy cover image download failed',
       }));
     }
   };
@@ -303,12 +318,12 @@ export const EncryptImagesPage: React.FC = () => {
                     />
                     {cipherPreviewUrl && !decryptedPreviewUrl && (
                       <div className="absolute top-2 left-2 px-2.5 py-1 rounded bg-[#080B12]/90 border border-[#00D4FF] text-[#00D4FF] text-[10px] font-mono font-bold backdrop-blur-sm">
-                        VISUAL CIPHER ACTIVE (ENCRYPTED)
+                        DECOY COVER IMAGE ACTIVE (SECRET PHOTO ENCRYPTED INSIDE)
                       </div>
                     )}
                     {decryptedPreviewUrl && (
                       <div className="absolute top-2 left-2 px-2.5 py-1 rounded bg-emerald-500/90 border border-emerald-400 text-[#F8FAFC] text-[10px] font-mono font-bold backdrop-blur-sm">
-                        DECRYPTED LOSSLESS PREVIEW
+                        DECRYPTED ORIGINAL PHOTO (RESTORED LOSSLESSLY)
                       </div>
                     )}
                   </div>
@@ -333,6 +348,67 @@ export const EncryptImagesPage: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Cover Image Style Selector */}
+              <div className="p-3.5 rounded-xl bg-[#080B12] border border-[#1E293B] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-[#00D4FF] font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Decoy Cover Image Style (The Alternate Picture)</span>
+                  </label>
+                  <Badge variant="cyan" size="sm">Steganography</Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCoverStyle('scenic')}
+                    className={`p-2.5 rounded-lg border text-left transition-all ${
+                      coverStyle === 'scenic'
+                        ? 'bg-[#00D4FF]/10 border-[#00D4FF] text-[#F8FAFC] ring-1 ring-[#00D4FF]/30'
+                        : 'bg-[#101622] border-[#1E293B] text-[#94A3B8] hover:border-[#64748B]'
+                    }`}
+                  >
+                    <div className="text-xs font-bold flex items-center gap-1.5">
+                      <span>🌄</span>
+                      <span>Scenic Nature</span>
+                    </div>
+                    <div className="text-[10px] text-[#64748B] mt-0.5">Twilight mountain wallpaper</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCoverStyle('cyber')}
+                    className={`p-2.5 rounded-lg border text-left transition-all ${
+                      coverStyle === 'cyber'
+                        ? 'bg-[#00D4FF]/10 border-[#00D4FF] text-[#F8FAFC] ring-1 ring-[#00D4FF]/30'
+                        : 'bg-[#101622] border-[#1E293B] text-[#94A3B8] hover:border-[#64748B]'
+                    }`}
+                  >
+                    <div className="text-xs font-bold flex items-center gap-1.5">
+                      <span>🌌</span>
+                      <span>Cyber Synthwave</span>
+                    </div>
+                    <div className="text-[10px] text-[#64748B] mt-0.5">Retro neon grid artwork</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCoverStyle('noise')}
+                    className={`p-2.5 rounded-lg border text-left transition-all ${
+                      coverStyle === 'noise'
+                        ? 'bg-[#00D4FF]/10 border-[#00D4FF] text-[#F8FAFC] ring-1 ring-[#00D4FF]/30'
+                        : 'bg-[#101622] border-[#1E293B] text-[#94A3B8] hover:border-[#64748B]'
+                    }`}
+                  >
+                    <div className="text-xs font-bold flex items-center gap-1.5">
+                      <span>📊</span>
+                      <span>Visual Cipher</span>
+                    </div>
+                    <div className="text-[10px] text-[#64748B] mt-0.5">Diffused byte static</div>
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#94A3B8] leading-tight">
+                  When encrypted, this alternate picture is generated and downloaded. Opening it displays the chosen artwork, while the original photo is safely encrypted inside.
+                </p>
+              </div>
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-[#1E293B]">
@@ -414,7 +490,7 @@ export const EncryptImagesPage: React.FC = () => {
                   className="w-full justify-center"
                   onClick={handleDownloadVisualCipher}
                 >
-                  Download Visual Cipher Image (.png)
+                  Download Decoy Cover Image (.png)
                 </Button>
                 <Button
                   variant="outline"
@@ -424,7 +500,7 @@ export const EncryptImagesPage: React.FC = () => {
                   className="w-full justify-center"
                   onClick={() => handleAction('decrypt')}
                 >
-                  Decrypt &amp; Download Original Image
+                  Decrypt &amp; Download Original Photo
                 </Button>
               </div>
             </Card>
