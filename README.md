@@ -97,10 +97,16 @@ sequenceDiagram
 
 ## 3. Core Features & Capabilities
 
-### 🔒 1. Multi-Format Authenticated Encryption
-- **Confidential Text:** Encrypt API keys, passwords, SQL connection strings, and tokens into compact, verified Base64 bundles.
-- **Documents & Archives:** Secure PDF, DOCX, XLSX, and ZIP archives up to **50 MB** per payload.
-- **Lossless Image Protection:** Pure binary AES-256-GCM encryption for PNG, JPEG, WEBP, and BMP formats. Zero resampling, zero compression artifacts, and exact color profile preservation.
+### 🔒 1. Multi-Format Authenticated Encryption & Steganography
+- **Multi-Algorithm Text Encryption:** Encrypt API keys, passwords, SQL connection strings, and tokens using **AES-256-GCM**, **ChaCha20-Poly1305**, or **AES-256-CBC + HMAC-SHA256**. Supports custom passphrase key derivation via PBKDF2-HMAC-SHA256 with 600,000 rounds and random salt.
+- **Steganographic Carrier Badges for Files:** Secure documents, archives, and arbitrary files up to **50 MB**. Payloads are encrypted and encapsulated inside a visually rendered security badge PNG carrier (`.carrier.png`). Uploading the carrier image recovers the exact original document.
+- **Decoy Cover Steganography for Images:** Encrypt photos using three decoy visual styles (**Scenic twilight**, **Cyber synthwave neon**, or **Cipher static noise**). The encrypted file downloads looking like a completely different, legitimate picture. Decrypting the decoy restores the original image byte-for-byte losslessly.
+- **Lossless Byte Preservation:** 100% byte-exact fidelity for binary media (PNG, JPEG, WEBP, BMP) validated via SHA-256 cryptographic digests before and after encryption.
+
+### 🎨 2. Immersive Cyber UI & Visual Engine
+- **Dynamic Binary Matrix Canvas:** Falling vertical columns of binary code (`0` and `1`) with glowing neon heads, floating 01/hex packets, and mouse-interactive constellation particles.
+- **Laser Scanner Previews:** Animated laser inspection sweep across encrypted carrier files and decoy images.
+- **Responsive Dark Theme:** Engineered with Tailwind CSS, glowing neon accents, and full accessibility across mobile and desktop.
 
 ### 🛡️ 2. Vault Registry & Object Management
 - **Bit-Exact Integrity Auditing:** Instant inspection of 128-bit AEAD tags and SHA-256 bit digests.
