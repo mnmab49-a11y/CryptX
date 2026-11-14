@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-33%2F33%20Passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-37%2F37%20Passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-00E599?style=for-the-badge)
 
 **Your Data. Your Keys. Your Privacy.**
@@ -451,6 +451,11 @@ backend/tests/test_crypto.py::test_crypto_service_tampered_tag PASSED
 backend/tests/test_crypto.py::test_crypto_service_tampered_ciphertext PASSED
 backend/tests/test_crypto.py::test_crypto_api_text_roundtrip PASSED
 backend/tests/test_crypto.py::test_crypto_api_text_decrypt_tampered_payload PASSED
+backend/tests/test_crypto.py::test_crypto_text_chacha20_roundtrip PASSED
+backend/tests/test_crypto.py::test_crypto_text_aes_cbc_roundtrip PASSED
+backend/tests/test_crypto.py::test_crypto_text_custom_key_roundtrip PASSED
+backend/tests/test_crypto.py::test_carrier_image_download_and_decrypt_flow PASSED
+backend/tests/test_crypto.py::test_crypto_service_aad_tamper_fails PASSED
 backend/tests/test_image_encryption.py::test_image_png_encryption_roundtrip PASSED
 backend/tests/test_image_encryption.py::test_image_jpeg_encryption_roundtrip PASSED
 backend/tests/test_image_encryption.py::test_image_webp_encryption_roundtrip PASSED
@@ -462,7 +467,7 @@ backend/tests/test_vault.py::test_image_encrypt_byte_exact_preservation PASSED
 backend/tests/test_vault.py::test_user_vault_isolation PASSED
 backend/tests/test_vault.py::test_vault_summary_and_delete PASSED
 
-======================== 31 passed, 2 warnings in 4.23s ========================
+======================== 37 passed, 2 warnings in 2.45s ========================
 ```
 
 ### Run Frontend Production Build & Typecheck

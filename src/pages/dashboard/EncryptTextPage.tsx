@@ -10,7 +10,10 @@ import {
   Cpu,
   Hash,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { Card } from '../../components/ui/Card';
@@ -20,7 +23,10 @@ import { api, TextEncryptResult } from '../../services/api';
 
 export const EncryptTextPage: React.FC = () => {
   const [inputText, setInputText] = useState('');
-  const [algorithm, setAlgorithm] = useState('aes-256-gcm');
+  const [algorithm, setAlgorithm] = useState('AES-256-GCM');
+  const [keyMode, setKeyMode] = useState<'server' | 'custom'>('server');
+  const [customKey, setCustomKey] = useState('');
+  const [showCustomKey, setShowCustomKey] = useState(false);
   const [outputResult, setOutputResult] = useState('');
   const [copied, setCopied] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
@@ -37,32 +43,40 @@ export const EncryptTextPage: React.FC = () => {
       return;
     }
 
+    if (mode === 'encrypt' && keyMode === 'custom' && !customKey.trim()) {
+      setErrorMessage('Please specify your custom secret key/passphrase before encrypting.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       if (mode === 'encrypt') {
         const result = await api.encryptText({
           plaintext: inputText,
-          algorithm: 'AES-256-GCM',
+          algorithm,
+          custom_key: keyMode === 'custom' ? customKey.trim() : undefined,
         });
         const envelope = {
           version: '1.0',
-          algorithm: result.algorithm || 'AES-256-GCM',
+          algorithm: result.algorithm || algorithm,
+          key_mode: result.key_mode || keyMode,
           nonce: result.nonce,
           tag: result.tag,
           wrapped_dek: result.wrapped_dek,
+          salt: result.salt,
           sha256_hash: result.sha256_hash,
           ciphertext: result.ciphertext,
         };
         setLastEnvelope(result);
         const formatted = JSON.stringify(envelope, null, 2);
         setOutputResult(formatted);
+        const modeDesc = keyMode === 'custom' ? 'User-defined Custom Passphrase' : 'Server KEK Envelope';
         setNoticeMessage(
-          `Payload successfully encrypted with real AES-256-GCM! DEK wrapped with Master KEK. SHA-256: ${result.sha256_hash.substring(0, 16)}...`
+          `Payload successfully encrypted with ${result.algorithm} [${modeDesc}]! SHA-256: ${result.sha256_hash.substring(0, 16)}...`
         );
       } else {
         // Decrypt mode
-        // Check if user input is JSON envelope or use lastEnvelope
         let payloadToDecrypt: any = null;
         try {
           payloadToDecrypt = JSON.parse(inputText.trim());
@@ -71,13 +85,20 @@ export const EncryptTextPage: React.FC = () => {
             payloadToDecrypt = lastEnvelope;
           } else {
             throw new Error(
-              'To decrypt, paste the complete JSON envelope (including ciphertext, nonce, tag, wrapped_dek) into the editor.'
+              'To decrypt, paste the complete JSON envelope (including ciphertext, nonce, tag, and key parameters) into the editor.'
             );
           }
         }
 
-        if (!payloadToDecrypt.ciphertext || !payloadToDecrypt.nonce || !payloadToDecrypt.tag || !payloadToDecrypt.wrapped_dek) {
-          throw new Error('Missing required cryptographic fields in JSON envelope: ciphertext, nonce, tag, and wrapped_dek.');
+        if (!payloadToDecrypt.ciphertext || !payloadToDecrypt.nonce || !payloadToDecrypt.tag) {
+          throw new Error('Missing required cryptographic fields in JSON envelope: ciphertext, nonce, and tag.');
+        }
+
+        const isCustom = payloadToDecrypt.key_mode === 'custom' || payloadToDecrypt.salt;
+        const keyToUse = customKey.trim() || payloadToDecrypt.custom_key;
+
+        if (isCustom && !keyToUse) {
+          throw new Error('This envelope was encrypted with a Custom Secret Key. Please enter your Custom Secret Key in the field below to decrypt.');
         }
 
         const res = await api.decryptText({
@@ -85,11 +106,14 @@ export const EncryptTextPage: React.FC = () => {
           nonce: payloadToDecrypt.nonce,
           tag: payloadToDecrypt.tag,
           wrapped_dek: payloadToDecrypt.wrapped_dek,
+          algorithm: payloadToDecrypt.algorithm || algorithm,
+          custom_key: keyToUse,
+          salt: payloadToDecrypt.salt,
         });
 
         setOutputResult(res.plaintext);
         setNoticeMessage(
-          `Decryption successful! Cryptographic authentication tag verified and SHA-256 matched (${res.sha256_hash.substring(0, 16)}...).`
+          `Decryption successful! Cryptographic authentication verified (${payloadToDecrypt.algorithm || 'AES-256-GCM'}) and SHA-256 matched.`
         );
       }
     } catch (err: any) {
@@ -176,26 +200,67 @@ export const EncryptTextPage: React.FC = () => {
               {/* Algorithm & Parameters */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div>
-                  <label className="block text-xs font-mono text-[#94A3B8] uppercase mb-1.5">
-                    Cipher Algorithm
+                  <label className="block text-xs font-mono text-[#94A3B8] uppercase mb-1.5 flex items-center justify-between">
+                    <span>Cipher Algorithm</span>
+                    <Badge variant="cyan" size="sm">Multi-Cipher</Badge>
                   </label>
                   <select
                     value={algorithm}
                     onChange={(e) => setAlgorithm(e.target.value)}
                     className="w-full rounded-lg bg-[#080B12] text-[#F8FAFC] text-xs font-mono p-2.5 border border-[#1E293B] focus:border-[#00D4FF] focus:outline-none"
                   >
-                    <option value="aes-256-gcm">AES-256-GCM (NIST Authenticated AEAD)</option>
+                    <option value="AES-256-GCM">AES-256-GCM (NIST AEAD - Default)</option>
+                    <option value="ChaCha20-Poly1305">ChaCha20-Poly1305 (RFC 8439 Stream AEAD)</option>
+                    <option value="AES-256-CBC">AES-256-CBC (HMAC-SHA256 Encrypt-then-MAC)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-[#94A3B8] uppercase mb-1.5">
-                    Key Management
+                  <label className="block text-xs font-mono text-[#94A3B8] uppercase mb-1.5 flex items-center justify-between">
+                    <span>Key Mode</span>
+                    <Badge variant={keyMode === 'custom' ? 'emerald' : 'blue'} size="sm">
+                      {keyMode === 'custom' ? 'User Custom Key' : 'Server KEK'}
+                    </Badge>
                   </label>
-                  <div className="w-full rounded-lg bg-[#080B12] text-[#38BDF8] text-xs font-mono p-2.5 border border-[#1E293B]">
-                    Server KEK + Ephemeral DEK (Auto)
-                  </div>
+                  <select
+                    value={keyMode}
+                    onChange={(e: any) => setKeyMode(e.target.value)}
+                    className="w-full rounded-lg bg-[#080B12] text-[#F8FAFC] text-xs font-mono p-2.5 border border-[#1E293B] focus:border-[#00D4FF] focus:outline-none"
+                  >
+                    <option value="server">Server Master KEK Envelope (Automated)</option>
+                    <option value="custom">Custom Secret Key / Passphrase (User Defined)</option>
+                  </select>
                 </div>
+              </div>
+
+              {/* Custom Key Input (Shown when custom key mode is active or user wants to specify key for decrypt) */}
+              <div className="p-3.5 rounded-xl bg-[#080B12] border border-[#1E293B] space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-emerald-400 font-bold flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Custom Secret Key / Passphrase {keyMode === 'server' ? '(Optional for Decrypt)' : '(Required)'}:</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomKey(!showCustomKey)}
+                    className="text-[#94A3B8] hover:text-[#F8FAFC] text-xs font-mono flex items-center gap-1"
+                  >
+                    {showCustomKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showCustomKey ? 'Hide' : 'Show'}</span>
+                  </button>
+                </div>
+                <input
+                  type={showCustomKey ? 'text' : 'password'}
+                  placeholder="Enter your secret key/passphrase (derived via Argon2id / PBKDF2)..."
+                  value={customKey}
+                  onChange={(e) => setCustomKey(e.target.value)}
+                  className="w-full rounded-lg bg-[#101622] text-[#F8FAFC] text-xs font-mono p-2.5 border border-[#1E293B] focus:border-emerald-400 focus:outline-none placeholder-[#64748B]"
+                />
+                <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+                  {keyMode === 'custom'
+                    ? 'Your custom secret key derives a 256-bit key with high-entropy salt. The raw key is never stored on the server.'
+                    : 'If decrypting a payload protected with a custom key, enter it here.'}
+                </p>
               </div>
 
               {/* Action Buttons */}

@@ -119,15 +119,18 @@ export interface AuthResponse {
 export interface TextEncryptPayload {
   plaintext: string;
   algorithm?: string;
+  custom_key?: string;
 }
 
 export interface TextEncryptResult {
   version?: string;
+  algorithm: string;
+  key_mode?: string;
   ciphertext: string;
   nonce: string;
   tag: string;
-  wrapped_dek: string;
-  algorithm: string;
+  wrapped_dek?: string;
+  salt?: string;
   sha256_hash: string;
 }
 
@@ -135,7 +138,10 @@ export interface TextDecryptPayload {
   ciphertext: string;
   nonce: string;
   tag: string;
-  wrapped_dek: string;
+  wrapped_dek?: string;
+  algorithm?: string;
+  custom_key?: string;
+  salt?: string;
 }
 
 export interface TextDecryptResult {
@@ -393,6 +399,92 @@ class ApiService {
     }
 
     // Extract filename from Content-Disposition header
+    let filename = 'decrypted_file';
+    const disposition = response.headers.get('Content-Disposition');
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+
+    const blob = await response.blob();
+    return { blob, filename };
+  }
+
+  async downloadCarrierImageBlob(fileId: string): Promise<{ blob: Blob; filename: string }> {
+    if (!API_BASE_URL) {
+      throw new Error('CryptX Backend API is not configured.');
+    }
+
+    const url = `${API_BASE_URL}/crypto/files/${fileId}/carrier`;
+    const token = this.getToken();
+    const headers = new Headers();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      let errorMsg = 'Failed to download carrier image';
+      try {
+        const errJson = await response.json();
+        errorMsg = errJson.detail || errorMsg;
+      } catch {
+        errorMsg = response.statusText || errorMsg;
+      }
+      throw new Error(errorMsg);
+    }
+
+    let filename = 'carrier_asset.png';
+    const disposition = response.headers.get('Content-Disposition');
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+
+    const blob = await response.blob();
+    return { blob, filename };
+  }
+
+  async decryptCarrierFile(file: File): Promise<{ blob: Blob; filename: string }> {
+    if (!API_BASE_URL) {
+      throw new Error('CryptX Backend API is not configured.');
+    }
+
+    const url = `${API_BASE_URL}/crypto/files/decrypt-carrier`;
+    const token = this.getToken();
+    const headers = new Headers();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorMsg = 'Failed to decrypt carrier image';
+      try {
+        const errJson = await response.json();
+        errorMsg = errJson.detail || errorMsg;
+      } catch {
+        errorMsg = response.statusText || errorMsg;
+      }
+      throw new Error(errorMsg);
+    }
+
     let filename = 'decrypted_file';
     const disposition = response.headers.get('Content-Disposition');
     if (disposition && disposition.includes('filename=')) {

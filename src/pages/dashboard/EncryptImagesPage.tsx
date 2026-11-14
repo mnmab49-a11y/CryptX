@@ -22,6 +22,7 @@ export const EncryptImagesPage: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [savedVaultItem, setSavedVaultItem] = useState<VaultFileItem | null>(null);
   const [decryptedPreviewUrl, setDecryptedPreviewUrl] = useState<string | null>(null);
+  const [cipherPreviewUrl, setCipherPreviewUrl] = useState<string | null>(null);
   const [operationState, setOperationState] = useState<{
     inProgress: boolean;
     completed: boolean;
@@ -104,34 +105,61 @@ export const EncryptImagesPage: React.FC = () => {
       if (mode === 'encrypt') {
         const item = await api.encryptFile(selectedImage, 'image');
         setSavedVaultItem(item);
+        try {
+          const { blob } = await api.downloadCarrierImageBlob(item.id);
+          const cUrl = URL.createObjectURL(blob);
+          setCipherPreviewUrl(cUrl);
+        } catch {}
         setOperationState({
           inProgress: false,
           completed: true,
-          message: `Image "${selectedImage.name}" encrypted with byte-exact AES-256-GCM authenticated cipher stream. Stored in vault.`,
+          message: `Image "${selectedImage.name}" encrypted into Visual Cipher. Stored in vault & available as Visual Cipher PNG.`,
           error: null,
         });
       } else {
-        if (!savedVaultItem) {
-          throw new Error('Please encrypt this image first, or access it from My Vault.');
+        if (!savedVaultItem && selectedImage) {
+          const { blob, filename } = await api.decryptCarrierFile(selectedImage);
+          const url = URL.createObjectURL(blob);
+          setDecryptedPreviewUrl(url);
+          setCipherPreviewUrl(null);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setOperationState({
+            inProgress: false,
+            completed: true,
+            message: `Visual Cipher Image decrypted! Restored original asset "${filename}" losslessly.`,
+            error: null,
+          });
+          return;
         }
-        const { blob, filename } = await api.decryptFileBlob(savedVaultItem.id);
-        const url = URL.createObjectURL(blob);
-        setDecryptedPreviewUrl(url);
 
-        // Auto trigger download
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        if (savedVaultItem) {
+          const { blob, filename } = await api.decryptFileBlob(savedVaultItem.id);
+          const url = URL.createObjectURL(blob);
+          setDecryptedPreviewUrl(url);
+          setCipherPreviewUrl(null);
 
-        setOperationState({
-          inProgress: false,
-          completed: true,
-          message: 'Image decrypted! Lossless bytes verified with SHA-256 checksum.',
-          error: null,
-        });
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          setOperationState({
+            inProgress: false,
+            completed: true,
+            message: 'Image decrypted! Lossless bytes verified with SHA-256 checksum.',
+            error: null,
+          });
+          return;
+        }
+
+        throw new Error('Please select an encrypted Visual Cipher Image (.png) or encrypt an image first.');
       }
     } catch (err: any) {
       setOperationState({
@@ -143,12 +171,37 @@ export const EncryptImagesPage: React.FC = () => {
     }
   };
 
+  const handleDownloadVisualCipher = async () => {
+    if (!savedVaultItem) return;
+    try {
+      const { blob, filename } = await api.downloadCarrierImageBlob(savedVaultItem.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setOperationState((prev) => ({
+        ...prev,
+        message: `Visual Cipher Image "${filename}" downloaded! Displays as an encrypted canvas; decrypts back to original.`,
+      }));
+    } catch (err: any) {
+      setOperationState((prev) => ({
+        ...prev,
+        error: err.message || 'Cipher image download failed',
+      }));
+    }
+  };
+
   const handleReset = () => {
     setSelectedImage(null);
     setPreviewUrl(null);
     setImageMeta(null);
     setSavedVaultItem(null);
     setDecryptedPreviewUrl(null);
+    setCipherPreviewUrl(null);
     setOperationState({ inProgress: false, completed: false, message: null, error: null });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -244,10 +297,20 @@ export const EncryptImagesPage: React.FC = () => {
 
                   <div className="relative rounded-lg overflow-hidden bg-[#080B12] border border-[#1E293B] aspect-video flex items-center justify-center">
                     <img
-                      src={decryptedPreviewUrl || previewUrl}
+                      src={decryptedPreviewUrl || cipherPreviewUrl || previewUrl}
                       alt="Preview"
                       className="max-h-full max-w-full object-contain"
                     />
+                    {cipherPreviewUrl && !decryptedPreviewUrl && (
+                      <div className="absolute top-2 left-2 px-2.5 py-1 rounded bg-[#080B12]/90 border border-[#00D4FF] text-[#00D4FF] text-[10px] font-mono font-bold backdrop-blur-sm">
+                        VISUAL CIPHER ACTIVE (ENCRYPTED)
+                      </div>
+                    )}
+                    {decryptedPreviewUrl && (
+                      <div className="absolute top-2 left-2 px-2.5 py-1 rounded bg-emerald-500/90 border border-emerald-400 text-[#F8FAFC] text-[10px] font-mono font-bold backdrop-blur-sm">
+                        DECRYPTED LOSSLESS PREVIEW
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
@@ -341,17 +404,29 @@ export const EncryptImagesPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Download Trigger */}
-              <Button
-                variant="outline"
-                size="md"
-                disabled={!savedVaultItem}
-                leftIcon={<Download className="w-4 h-4" />}
-                className="w-full justify-center"
-                onClick={() => handleAction('decrypt')}
-              >
-                Decrypt &amp; Download Image
-              </Button>
+              {/* Download Triggers */}
+              <div className="space-y-2">
+                <Button
+                  variant="primary"
+                  size="md"
+                  disabled={!savedVaultItem}
+                  leftIcon={<ImageIcon className="w-4 h-4 text-[#00D4FF]" />}
+                  className="w-full justify-center"
+                  onClick={handleDownloadVisualCipher}
+                >
+                  Download Visual Cipher Image (.png)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  disabled={!savedVaultItem}
+                  leftIcon={<Download className="w-4 h-4" />}
+                  className="w-full justify-center"
+                  onClick={() => handleAction('decrypt')}
+                >
+                  Decrypt &amp; Download Original Image
+                </Button>
+              </div>
             </Card>
           </div>
         </div>

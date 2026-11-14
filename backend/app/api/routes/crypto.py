@@ -12,6 +12,7 @@ from app.schemas.crypto import TextEncryptRequest, TextEncryptResponse, TextDecr
 from app.schemas.vault import FileMetadataResponse
 from app.services.crypto_service import CryptoService, CryptographicError, CryptographicIntegrityError
 from app.services.storage_service import storage_service
+from app.services.steganography_service import steganography_service
 from app.services.activity_service import ActivityService
 
 router = APIRouter(prefix="/crypto", tags=["Cryptography"])
@@ -24,15 +25,18 @@ def encrypt_text(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        result = CryptoService.encrypt_text(payload.plaintext)
-        result["version"] = "1.0"
+        result = CryptoService.encrypt_text(
+            text=payload.plaintext,
+            algorithm=payload.algorithm,
+            custom_key=payload.custom_key,
+        )
 
         ActivityService.log_activity(
             db,
             user_id=current_user.id,
             operation_type="ENCRYPT_TEXT",
             resource_name="Text snippet",
-            details=f"Algorithm: AES-256-GCM, size: {len(payload.plaintext)} chars",
+            details=f"Algorithm: {result['algorithm']}, KeyMode: {result['key_mode']}, size: {len(payload.plaintext)} chars",
             ip_address=request.client.host if request.client else None,
         )
 
@@ -56,6 +60,9 @@ def decrypt_text(
             nonce_b64=payload.nonce,
             tag_b64=payload.tag,
             wrapped_dek_b64=payload.wrapped_dek,
+            algorithm=payload.algorithm,
+            custom_key=payload.custom_key,
+            salt_b64=payload.salt,
         )
 
         ActivityService.log_activity(
@@ -63,7 +70,7 @@ def decrypt_text(
             user_id=current_user.id,
             operation_type="DECRYPT_TEXT",
             resource_name="Text snippet",
-            details="Decryption successful with authenticated tag verification",
+            details=f"Decryption successful with {payload.algorithm or 'AES-256-GCM'} tag verification",
             ip_address=request.client.host if request.client else None,
         )
 
@@ -254,4 +261,131 @@ def decrypt_file(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"File decryption failed: {str(e)}",
+        )
+
+@router.get("/files/{file_id}/carrier")
+def download_carrier_image(
+    file_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Download the encrypted asset packaged inside a valid, viewable Steganographic Carrier PNG image.
+    - For documents: Generates a sleek dark cybersecurity Vault Asset Carrier Badge PNG.
+    - For images: Generates a visual cryptographic cipher noise image PNG.
+    """
+    db_file = db.query(EncryptedFile).filter(
+        EncryptedFile.id == file_id,
+        EncryptedFile.user_id == current_user.id,
+    ).first()
+
+    if not db_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Encrypted file not found or unauthorized access",
+        )
+
+    import json, base64
+    ciphertext = storage_service.read_file(db_file.stored_filename)
+
+    envelope = {
+        "magic": "CPTX",
+        "version": "1.0",
+        "file_id": db_file.id,
+        "original_filename": db_file.original_filename,
+        "file_type": db_file.file_type,
+        "sha256_hash": db_file.sha256_hash,
+        "nonce": db_file.nonce,
+        "tag": db_file.authentication_tag,
+        "wrapped_dek": db_file.wrapped_dek,
+        "ciphertext": base64.b64encode(ciphertext).decode("ascii"),
+    }
+    envelope_bytes = json.dumps(envelope).encode("utf-8")
+
+    if db_file.category == "image":
+        carrier_bytes = steganography_service.create_image_cipher_carrier(
+            original_filename=db_file.original_filename,
+            encrypted_payload=envelope_bytes,
+        )
+        carrier_filename = f"{db_file.original_filename}.img.cptx.png"
+    else:
+        carrier_bytes = steganography_service.create_file_carrier_image(
+            original_filename=db_file.original_filename,
+            file_size=db_file.file_size,
+            sha256_hash=db_file.sha256_hash,
+            encrypted_payload=envelope_bytes,
+        )
+        carrier_filename = f"{db_file.original_filename}.cptx.png"
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{carrier_filename}"',
+        "Access-Control-Expose-Headers": "Content-Disposition",
+    }
+    return Response(content=carrier_bytes, media_type="image/png", headers=headers)
+
+@router.post("/files/decrypt-carrier")
+async def decrypt_carrier_file(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Directly decrypt an uploaded Steganographic Carrier PNG Image and reconstruct the exact original file.
+    """
+    contents = await file.read()
+    if not steganography_service.is_carrier_image(contents):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The uploaded file is not a valid CryptX Steganographic Carrier Image (.png)",
+        )
+
+    import json, base64
+    try:
+        payload_bytes = steganography_service.extract_payload(contents)
+        if not payload_bytes:
+            raise ValueError("Failed to extract sealed cryptographic envelope")
+
+        env = json.loads(payload_bytes.decode("utf-8"))
+        ciphertext = base64.b64decode(env["ciphertext"])
+        nonce = base64.b64decode(env["nonce"])
+        tag = base64.b64decode(env["tag"])
+        wrapped_dek = base64.b64decode(env["wrapped_dek"])
+
+        plaintext = CryptoService.decrypt_bytes(
+            ciphertext=ciphertext,
+            nonce=nonce,
+            tag=tag,
+            wrapped_dek=wrapped_dek,
+        )
+
+        current_hash = CryptoService.calculate_sha256(plaintext)
+        if current_hash != env["sha256_hash"]:
+            raise CryptographicIntegrityError("SHA-256 hash mismatch: file integrity corrupted")
+
+        ActivityService.log_activity(
+            db,
+            user_id=current_user.id,
+            operation_type="DECRYPT_CARRIER",
+            resource_name=env["original_filename"],
+            details="Carrier image extracted and decrypted with 100% SHA-256 match",
+            ip_address=request.client.host if request.client else None,
+        )
+
+        headers = {
+            "Content-Disposition": f'attachment; filename="{env["original_filename"]}"',
+            "X-SHA256-Checksum": env["sha256_hash"],
+            "Access-Control-Expose-Headers": "Content-Disposition, X-SHA256-Checksum",
+        }
+        return Response(
+            content=plaintext,
+            media_type=env.get("file_type") or "application/octet-stream",
+            headers=headers,
+        )
+    except CryptographicIntegrityError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Carrier decryption failed: {str(e)}",
         )

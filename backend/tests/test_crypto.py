@@ -113,7 +113,8 @@ def test_crypto_api_text_decrypt_tampered_payload(client, auth_headers):
         headers=auth_headers,
     )
     assert dec_res.status_code == 400
-    assert "tag verification failed" in dec_res.json()["detail"].lower()
+    detail = dec_res.json()["detail"].lower()
+    assert "authentication failed" in detail or "tag verification failed" in detail
 
 def test_crypto_service_aad_tamper_fails():
     secret_text = b"Classified Payload Bound to Metadata"
@@ -154,3 +155,141 @@ def test_crypto_text_response_includes_version(client, auth_headers):
     enc_data = enc_res.json()
     assert "version" in enc_data
     assert enc_data["version"] == "1.0"
+
+def test_crypto_text_chacha20_roundtrip(client, auth_headers):
+    original_text = "ChaCha20-Poly1305 High Performance Stream Encryption!"
+    enc_res = client.post(
+        "/api/v1/crypto/text/encrypt",
+        json={"plaintext": original_text, "algorithm": "ChaCha20-Poly1305"},
+        headers=auth_headers,
+    )
+    assert enc_res.status_code == 200
+    enc_data = enc_res.json()
+    assert enc_data["algorithm"] == "ChaCha20-Poly1305"
+
+    # Decrypt
+    dec_res = client.post(
+        "/api/v1/crypto/text/decrypt",
+        json={
+            "ciphertext": enc_data["ciphertext"],
+            "nonce": enc_data["nonce"],
+            "tag": enc_data["tag"],
+            "wrapped_dek": enc_data["wrapped_dek"],
+            "algorithm": "ChaCha20-Poly1305",
+        },
+        headers=auth_headers,
+    )
+    assert dec_res.status_code == 200
+    assert dec_res.json()["plaintext"] == original_text
+
+def test_crypto_text_aes_cbc_roundtrip(client, auth_headers):
+    original_text = "AES-256-CBC with HMAC-SHA256 Encrypt-then-MAC!"
+    enc_res = client.post(
+        "/api/v1/crypto/text/encrypt",
+        json={"plaintext": original_text, "algorithm": "AES-256-CBC"},
+        headers=auth_headers,
+    )
+    assert enc_res.status_code == 200
+    enc_data = enc_res.json()
+    assert enc_data["algorithm"] == "AES-256-CBC"
+
+    # Decrypt
+    dec_res = client.post(
+        "/api/v1/crypto/text/decrypt",
+        json={
+            "ciphertext": enc_data["ciphertext"],
+            "nonce": enc_data["nonce"],
+            "tag": enc_data["tag"],
+            "wrapped_dek": enc_data["wrapped_dek"],
+            "algorithm": "AES-256-CBC",
+        },
+        headers=auth_headers,
+    )
+    assert dec_res.status_code == 200
+    assert dec_res.json()["plaintext"] == original_text
+
+def test_crypto_text_custom_key_roundtrip(client, auth_headers):
+    original_text = "Top Secret Credentials Protected with User Custom Key"
+    my_key = "MySuperSecretCustomPassphrase#2026!"
+
+    # Encrypt with custom key
+    enc_res = client.post(
+        "/api/v1/crypto/text/encrypt",
+        json={
+            "plaintext": original_text,
+            "algorithm": "AES-256-GCM",
+            "custom_key": my_key,
+        },
+        headers=auth_headers,
+    )
+    assert enc_res.status_code == 200
+    enc_data = enc_res.json()
+    assert enc_data["key_mode"] == "custom"
+    assert enc_data["salt"] is not None
+
+    # Decrypt with correct custom key -> succeeds
+    dec_res = client.post(
+        "/api/v1/crypto/text/decrypt",
+        json={
+            "ciphertext": enc_data["ciphertext"],
+            "nonce": enc_data["nonce"],
+            "tag": enc_data["tag"],
+            "salt": enc_data["salt"],
+            "custom_key": my_key,
+            "algorithm": "AES-256-GCM",
+        },
+        headers=auth_headers,
+    )
+    assert dec_res.status_code == 200
+    assert dec_res.json()["plaintext"] == original_text
+
+    # Decrypt with WRONG custom key -> fails
+    dec_bad = client.post(
+        "/api/v1/crypto/text/decrypt",
+        json={
+            "ciphertext": enc_data["ciphertext"],
+            "nonce": enc_data["nonce"],
+            "tag": enc_data["tag"],
+            "salt": enc_data["salt"],
+            "custom_key": "WrongPassword999!",
+            "algorithm": "AES-256-GCM",
+        },
+        headers=auth_headers,
+    )
+    assert dec_bad.status_code == 400
+    assert "authentication failed" in dec_bad.json()["detail"].lower()
+
+def test_carrier_image_download_and_decrypt_flow(client, auth_headers):
+    import io
+    doc_content = b"%PDF-1.5 University CryptX Security Certificate"
+    
+    # 1. Encrypt file
+    enc_res = client.post(
+        "/api/v1/crypto/files/encrypt",
+        files={"file": ("certificate.pdf", io.BytesIO(doc_content), "application/pdf")},
+        data={"category": "document"},
+        headers=auth_headers,
+    )
+    assert enc_res.status_code == 201
+    file_id = enc_res.json()["id"]
+
+    # 2. Download Carrier PNG
+    carrier_res = client.get(
+        f"/api/v1/crypto/files/{file_id}/carrier",
+        headers=auth_headers,
+    )
+    assert carrier_res.status_code == 200
+    assert carrier_res.headers["content-type"] == "image/png"
+    assert "certificate.pdf.cptx.png" in carrier_res.headers["content-disposition"]
+    carrier_bytes = carrier_res.content
+
+    # 3. Direct Decrypt the Carrier PNG via /decrypt-carrier
+    dec_res = client.post(
+        "/api/v1/crypto/files/decrypt-carrier",
+        files={"file": ("certificate.pdf.cptx.png", io.BytesIO(carrier_bytes), "image/png")},
+        headers=auth_headers,
+    )
+    assert dec_res.status_code == 200
+    assert dec_res.content == doc_content
+    assert "certificate.pdf" in dec_res.headers["content-disposition"]
+

@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   HardDrive,
-  AlertCircle
+  AlertCircle,
+  Image as ImageIcon
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { Card } from '../../components/ui/Card';
@@ -85,21 +86,43 @@ export const EncryptFilesPage: React.FC = () => {
         setOperationState({
           inProgress: false,
           completed: true,
-          message: `"${selectedFile.name}" encrypted with AES-256-GCM and stored in secure vault. SHA-256 checksum: ${item.sha256_hash.substring(0, 16)}...`,
+          message: `"${selectedFile.name}" encrypted with AES-256-GCM. Stored in vault & ready for Carrier Image download. SHA-256: ${item.sha256_hash.substring(0, 16)}...`,
           error: null,
         });
       } else {
-        // If user already encrypted it, decrypt it back
-        if (!savedVaultItem) {
-          throw new Error('Please encrypt this file first, or select a file directly from My Vault.');
+        // Direct Steganographic Carrier image decryption
+        if (selectedFile && (selectedFile.name.endsWith('.png') || selectedFile.type.includes('image'))) {
+          const { blob, filename } = await api.decryptCarrierFile(selectedFile);
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          setOperationState({
+            inProgress: false,
+            completed: true,
+            message: `Carrier image verified! Extracted original payload: "${filename}". Downloaded to disk.`,
+            error: null,
+          });
+          return;
         }
-        await handleDownloadDecrypted(savedVaultItem.id);
-        setOperationState({
-          inProgress: false,
-          completed: true,
-          message: `Decryption verified! Authentication tag confirmed. File downloaded to disk.`,
-          error: null,
-        });
+
+        // Vault-based decryption
+        if (savedVaultItem) {
+          await handleDownloadDecrypted(savedVaultItem.id);
+          setOperationState({
+            inProgress: false,
+            completed: true,
+            message: `Decryption verified! Authentication tag confirmed. File downloaded to disk.`,
+            error: null,
+          });
+          return;
+        }
+
+        throw new Error('Please select an encrypted Carrier Image (.png) to extract, or encrypt a file first.');
       }
     } catch (err: any) {
       setOperationState({
@@ -108,6 +131,30 @@ export const EncryptFilesPage: React.FC = () => {
         message: null,
         error: err.message || 'File operation failed',
       });
+    }
+  };
+
+  const handleDownloadCarrier = async () => {
+    if (!savedVaultItem) return;
+    try {
+      const { blob, filename } = await api.downloadCarrierImageBlob(savedVaultItem.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setOperationState((prev) => ({
+        ...prev,
+        message: `Steganographic Carrier Image "${filename}" downloaded! Contains the sealed encrypted file.`,
+      }));
+    } catch (err: any) {
+      setOperationState((prev) => ({
+        ...prev,
+        error: err.message || 'Carrier download failed',
+      }));
     }
   };
 
@@ -310,17 +357,29 @@ export const EncryptFilesPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Download Trigger Button */}
-              <Button
-                variant="outline"
-                size="md"
-                disabled={!savedVaultItem}
-                leftIcon={<Download className="w-4 h-4" />}
-                className="w-full justify-center"
-                onClick={() => savedVaultItem && handleDownloadDecrypted(savedVaultItem.id)}
-              >
-                Decrypt &amp; Download File
-              </Button>
+              {/* Download Trigger Buttons */}
+              <div className="space-y-2">
+                <Button
+                  variant="primary"
+                  size="md"
+                  disabled={!savedVaultItem}
+                  leftIcon={<ImageIcon className="w-4 h-4 text-[#00D4FF]" />}
+                  className="w-full justify-center"
+                  onClick={handleDownloadCarrier}
+                >
+                  Download As Carrier Image (.png)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  disabled={!savedVaultItem}
+                  leftIcon={<Download className="w-4 h-4" />}
+                  className="w-full justify-center"
+                  onClick={() => savedVaultItem && handleDownloadDecrypted(savedVaultItem.id)}
+                >
+                  Decrypt &amp; Download Raw File
+                </Button>
+              </div>
 
               {/* Architecture Bullet */}
               <div className="pt-2 text-[11px] font-mono text-[#64748B] flex items-center gap-2">
