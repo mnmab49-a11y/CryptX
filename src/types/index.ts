@@ -11,7 +11,7 @@ export interface FeatureItem {
   description: string;
   iconName: string;
   techSpecs: string[];
-  status: 'Planned' | 'Design Ready' | 'Phase 2 Candidate';
+  status: 'Operational' | 'Live' | 'Production Ready' | 'Planned' | 'Design Ready' | 'Phase 2 Candidate';
 }
 
 export interface StepItem {

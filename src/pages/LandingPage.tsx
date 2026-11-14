@@ -87,7 +87,7 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <div className="p-3 rounded-lg bg-[#141D2B] border border-[#1E293B] text-xs text-[#94A3B8]">
-              <span className="text-[#00D4FF] font-bold">Planned API Target: </span>
+              <span className="text-emerald-400 font-bold">Active API Endpoint: </span>
               <code className="text-slate-300">/api/v1/crypto/{selectedFeature.id}</code> (Python FastAPI with AES-256-GCM cipher streaming).
             </div>
 

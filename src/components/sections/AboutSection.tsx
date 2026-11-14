@@ -14,28 +14,28 @@ import { ArchitectureLayer } from '../../types';
 const techLayers: ArchitectureLayer[] = [
   {
     layer: 'Frontend Client',
-    tech: 'React.js, TypeScript, Tailwind CSS, Lucide',
-    role: 'Client-side interface, responsive encryption workspace, key controls',
+    tech: 'React 18, TypeScript 5.7, Tailwind CSS, Vite 6',
+    role: 'Live client-side interface deployed on Vercel with strict route guards & session telemetry',
   },
   {
     layer: 'Backend Services',
-    tech: 'Python FastAPI (Future Phase)',
-    role: 'High-performance asynchronous API, payload streaming, auth routing',
+    tech: 'Python 3.12+ FastAPI, Starlette, Asynchronous Uvicorn',
+    role: 'High-throughput asynchronous REST API deployed on FastAPI Cloud with live CORS guards',
   },
   {
     layer: 'Cryptography Core',
-    tech: 'Python cryptography library, AES-256-GCM, SHA-256',
-    role: 'Authenticated AEAD encryption, key derivation, tamper detection',
+    tech: 'Python cryptography (AES-256-GCM, NIST RFC 3394 Key Wrap)',
+    role: 'Hardware-accelerated authenticated AEAD cipher streams, ephemeral DEKs, and SHA-256 verification',
   },
   {
     layer: 'Database Layer',
-    tech: 'PostgreSQL (Future Phase)',
-    role: 'Relational metadata management, user accounts, audit logging',
+    tech: 'PostgreSQL 16 & SQLAlchemy 2.0 ORM',
+    role: 'Relational metadata management, user accounts, and immutable forensic audit ledger',
   },
   {
     layer: 'Cloud Infrastructure',
-    tech: 'Object Storage, Cloud Compute, KMS (Future Phase)',
-    role: 'Scalable distributed persistence, zero-knowledge cloud blobs, key management',
+    tech: 'Opaque Binary Persistence, Master KEK Security, JWT Auth',
+    role: 'Zero-knowledge encrypted object storage, 24-hour Bearer sessions, and envelope key hierarchy',
   },
 ];
 
@@ -102,8 +102,8 @@ export const AboutSection: React.FC = () => {
                 <span className="text-[#F8FAFC] font-medium">Cloud & InfoSec</span>
               </div>
               <div className="p-2.5 rounded-lg bg-[#101622] border border-[#1E293B]">
-                <span className="text-slate-500 block">Phase Status:</span>
-                <span className="text-emerald-400 font-medium">Phase 1 Complete</span>
+                <span className="text-slate-500 block">System Status:</span>
+                <span className="text-emerald-400 font-medium">Production Live (v1.0)</span>
               </div>
             </div>
           </Card>
@@ -113,9 +113,12 @@ export const AboutSection: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xl font-bold text-[#F8FAFC] flex items-center gap-2">
                 <Terminal className="w-5 h-5 text-[#3B82F6]" />
-                Full-Stack Architecture Roadmap
+                Full-Stack Operational Architecture
               </h3>
-              <span className="text-xs font-mono text-[#94A3B8]">Phased Delivery</span>
+              <span className="text-xs font-mono text-emerald-400 font-semibold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live & Integrated
+              </span>
             </div>
 
             <div className="space-y-3">
@@ -133,15 +136,9 @@ export const AboutSection: React.FC = () => {
                         {item.layer}
                       </span>
                     </div>
-                    {idx === 0 ? (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-                        Active in Phase 1
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#101622] text-[#94A3B8] border border-[#1E293B]">
-                        Future Phase
-                      </span>
-                    )}
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      Live & Operational
+                    </span>
                   </div>
                   <div className="font-mono text-xs text-[#3B82F6] mb-1.5">
                     {item.tech}

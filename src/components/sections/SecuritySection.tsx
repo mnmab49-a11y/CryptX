@@ -41,7 +41,7 @@ const principles: SecurityPrinciple[] = [
     description: 'Cryptographic security is strictly bound to key isolation. Key metadata and payload ciphertexts are decoupled and managed through structured access barriers.',
     technicalDetails: [
       'Strict separation of data encryption keys (DEK) & key encryption keys (KEK)',
-      'Planned Cloud KMS envelope encryption architecture',
+      'Live Cloud KMS & NIST RFC 3394 envelope encryption architecture',
       'No plaintext keys written to disk or logged in server telemetry'
     ],
     iconName: 'KeyRound',

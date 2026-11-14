@@ -296,6 +296,7 @@ export const EncryptFilesPage: React.FC = () => {
                     </div>
                     <div className="space-y-1 text-[#94A3B8] text-[11px]">
                       <div>Original: <span className="text-[#F8FAFC]">{savedVaultItem.original_filename}</span></div>
+                      <div>Container: <span className="text-emerald-400">.cptx (Versioned Binary Envelope)</span></div>
                       <div>Algorithm: <span className="text-[#00D4FF]">{savedVaultItem.encryption_algorithm}</span></div>
                       <div>Plaintext Size: <span className="text-[#F8FAFC]">{formatFileSize(savedVaultItem.file_size)}</span></div>
                       <div>Ciphertext Size: <span className="text-[#F8FAFC]">{formatFileSize(savedVaultItem.encrypted_size)}</span></div>

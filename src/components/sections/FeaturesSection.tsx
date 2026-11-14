@@ -24,7 +24,7 @@ const features: FeatureItem[] = [
     description: 'Securely encrypt and decrypt sensitive text, credentials, and confidential notes using authenticated cryptographic streams.',
     iconName: 'FileCode',
     techSpecs: ['AES-256-GCM', 'UTF-8 Binary Encoding', 'Zero Plaintext Persistence'],
-    status: 'Planned',
+    status: 'Operational',
   },
   {
     id: 'file-encryption',
@@ -32,8 +32,8 @@ const features: FeatureItem[] = [
     subtitle: 'Document-Level Defense',
     description: 'Protect documents, archives, and arbitrary files before cloud storage, preventing unauthorized access across network boundaries.',
     iconName: 'Files',
-    techSpecs: ['Chunked Streaming', 'Unique Initialization Vectors', 'Format Encapsulation'],
-    status: 'Planned',
+    techSpecs: ['Chunked Streaming', 'Unique 96-bit Nonces', 'RFC 3394 Key Wrap'],
+    status: 'Operational',
   },
   {
     id: 'image-encryption',
@@ -41,8 +41,8 @@ const features: FeatureItem[] = [
     subtitle: 'Visual Media Protection',
     description: 'Secure image files while preserving their original byte fidelity upon decryption, shielding sensitive visual information.',
     iconName: 'ImageIcon',
-    techSpecs: ['Lossless Reconstitution', 'EXIF Metadata Stripping', 'Multi-Format Support'],
-    status: 'Planned',
+    techSpecs: ['Byte-Exact Lossless', 'Native Binary Preservation', 'PNG / JPG / WEBP / BMP'],
+    status: 'Operational',
   },
   {
     id: 'secure-cloud-storage',
@@ -51,7 +51,7 @@ const features: FeatureItem[] = [
     description: 'Store encrypted payloads in scalable cloud infrastructure where raw objects remain completely opaque to storage hosts.',
     iconName: 'CloudRain',
     techSpecs: ['Encrypted at Rest', 'Cloud Object Architecture', 'Opaque Blob Indexing'],
-    status: 'Planned',
+    status: 'Operational',
   },
   {
     id: 'data-integrity',
@@ -60,7 +60,7 @@ const features: FeatureItem[] = [
     description: 'Use cryptographic hashing to verify file integrity, ensuring files have not been modified, corrupted, or intercepted in transit.',
     iconName: 'CheckCheck',
     techSpecs: ['SHA-256 Digests', 'Authenticated Cipher Tags', 'Bit-Flip Detection'],
-    status: 'Planned',
+    status: 'Operational',
   },
   {
     id: 'key-management',
@@ -68,8 +68,8 @@ const features: FeatureItem[] = [
     subtitle: 'Cryptographic Key Lifecycle',
     description: 'Protect and manage cryptographic key metadata securely with dedicated key derivation, separation of duties, and KMS hooks.',
     iconName: 'KeyRound',
-    techSpecs: ['PBKDF2 / Argon2 Derivation', 'KMS Integration Ready', 'Metadata Vaulting'],
-    status: 'Planned',
+    techSpecs: ['Argon2id Key Derivation', 'NIST RFC 3394 Envelope', 'DEK / KEK Hierarchy'],
+    status: 'Operational',
   },
 ];
 
@@ -126,7 +126,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ onSelectFeatur
                   <div className="p-3 rounded-xl bg-[#101622] border border-[#1E293B] group-hover:border-[#00D4FF]/40 group-hover:shadow-[0_0_15px_-3px_rgba(0,212,255,0.2)] transition-all">
                     {getIcon(feature.iconName)}
                   </div>
-                  <Badge variant="neutral" size="sm">
+                  <Badge variant="emerald" size="sm">
                     {feature.status}
                   </Badge>
                 </div>
@@ -168,17 +168,17 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ onSelectFeatur
           ))}
         </div>
 
-        {/* Development Note Banner */}
+        {/* Production Status Banner */}
         <div className="mt-12 p-4 rounded-xl bg-[#101622] border border-[#1E293B] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#94A3B8]">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#00D4FF]" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>
-              <strong>Phase 1 Architecture Note:</strong> Capabilities shown represent product
-              specifications designed for integration with Python FastAPI & AES-256-GCM backend modules.
+              <strong className="text-[#F8FAFC]">Active Production System:</strong> All 6 cryptographic modules
+              are deployed and operational with hardware-accelerated AES-256-GCM, Argon2id, and live cloud persistence.
             </span>
           </div>
-          <span className="font-mono text-[11px] text-[#00D4FF] shrink-0">
-            Roadmap Phase 1/4
+          <span className="font-mono text-[11px] text-emerald-400 font-semibold px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+            System Live &bull; v1.0.0
           </span>
         </div>
       </div>

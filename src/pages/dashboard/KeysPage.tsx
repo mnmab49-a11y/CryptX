@@ -102,7 +102,7 @@ export const KeysPage: React.FC = () => {
                 Master Key (MK)
               </h4>
               <p className="text-xs text-[#94A3B8] leading-relaxed">
-                Derived directly from user credentials using <strong>PBKDF2-HMAC-SHA256</strong> with 100,000+ iterations and high-entropy salt.
+                Protected and hashed using <strong>Argon2id</strong> ($m=65536, t=3, p=4$) with high-entropy cryptographic salt.
               </p>
               <div className="pt-2 border-t border-[#1E293B]/60 text-[11px] font-mono text-slate-400">
                 Isolation: Client RAM Only &bull; Never Persisted

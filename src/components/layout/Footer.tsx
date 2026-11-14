@@ -104,7 +104,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li className="flex items-center justify-between">
                 <span>Key Derivation:</span>
-                <span className="font-mono text-xs text-[#F8FAFC]">PBKDF2/KMS</span>
+                <span className="font-mono text-xs text-[#F8FAFC]">Argon2id / KEK</span>
               </li>
               <li className="flex items-center justify-between">
                 <span>Backend:</span>

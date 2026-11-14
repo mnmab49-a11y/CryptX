@@ -45,8 +45,17 @@ export const EncryptTextPage: React.FC = () => {
           plaintext: inputText,
           algorithm: 'AES-256-GCM',
         });
+        const envelope = {
+          version: '1.0',
+          algorithm: result.algorithm || 'AES-256-GCM',
+          nonce: result.nonce,
+          tag: result.tag,
+          wrapped_dek: result.wrapped_dek,
+          sha256_hash: result.sha256_hash,
+          ciphertext: result.ciphertext,
+        };
         setLastEnvelope(result);
-        const formatted = JSON.stringify(result, null, 2);
+        const formatted = JSON.stringify(envelope, null, 2);
         setOutputResult(formatted);
         setNoticeMessage(
           `Payload successfully encrypted with real AES-256-GCM! DEK wrapped with Master KEK. SHA-256: ${result.sha256_hash.substring(0, 16)}...`

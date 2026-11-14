@@ -326,6 +326,7 @@ export const EncryptImagesPage: React.FC = () => {
                     </div>
                     <div className="space-y-1 text-[#94A3B8] text-[11px]">
                       <div>Stored ID: <span className="text-[#F8FAFC]">{savedVaultItem.id.substring(0, 18)}...</span></div>
+                      <div>Container: <span className="text-emerald-400">.img.cptx (Byte-Exact Lossless)</span></div>
                       <div>Algorithm: <span className="text-[#00D4FF]">AES-256-GCM</span></div>
                       <div>Plaintext Bytes: <span className="text-[#F8FAFC]">{formatFileSize(savedVaultItem.file_size)}</span></div>
                       <div>Encrypted Bytes: <span className="text-[#F8FAFC]">{formatFileSize(savedVaultItem.encrypted_size)}</span></div>
