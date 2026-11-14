@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Shield,
@@ -7,24 +7,58 @@ import {
   Clock,
   Trash2,
   Download,
-  Info,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
 
 export const SettingsPage: React.FC = () => {
+  const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'appearance' | 'account'>('profile');
-  const [name, setName] = useState('Mina Amjad');
-  const [email] = useState('mnmab49@gmail.com');
+  const [name, setName] = useState(user?.full_name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [sessionTimeout, setSessionTimeout] = useState('15');
   const [clipboardClear, setClipboardClear] = useState(true);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = (section: string) => {
-    setSaveNotice(`Settings for "${section}" saved locally in client memory. Backend profile synchronization will activate in Phase 4.`);
+  useEffect(() => {
+    if (user) {
+      setName(user.full_name);
+      setEmail(user.email);
+    }
+  }, [user]);
+
+  const handleSave = async (section: string) => {
+    setSaveNotice(null);
+    setErrorMessage(null);
+
+    if (section === 'Profile') {
+      if (!name.trim()) {
+        setErrorMessage('Full name cannot be empty.');
+        return;
+      }
+      setIsSaving(true);
+      try {
+        await api.updateProfile({ full_name: name.trim() });
+        await refreshUser();
+        setSaveNotice('Profile successfully updated.');
+        setTimeout(() => setSaveNotice(null), 3000);
+      } catch (err: any) {
+        setErrorMessage(err.message || 'Failed to update profile');
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    setSaveNotice(`Settings for "${section}" saved in client session.`);
     setTimeout(() => setSaveNotice(null), 3000);
   };
 
@@ -35,22 +69,19 @@ export const SettingsPage: React.FC = () => {
       breadcrumbs={['Settings']}
     >
       <div className="space-y-6 text-left max-w-5xl">
-        {/* Notice Banner */}
-        <div className="p-4 rounded-xl bg-[#141D2B] border border-[#1E293B] flex items-start gap-3 text-xs text-[#94A3B8]">
-          <Info className="w-5 h-5 text-[#00D4FF] shrink-0 mt-0.5" />
-          <div className="leading-relaxed">
-            <strong className="text-[#F8FAFC] block mb-0.5 font-mono">
-              Client Preferences Interface (Frontend Phase 3):
-            </strong>
-            Configuration choices below govern the client UI experience. Multi-factor authentication (MFA) and persistent profile storage connect via PostgreSQL in Phase 4.
-          </div>
-        </div>
-
         {/* Status Toast */}
         {saveNotice && (
           <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-400 font-mono">
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{saveNotice}</span>
+          </div>
+        )}
+
+        {/* Error Notification */}
+        {errorMessage && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5 text-xs text-rose-300 font-mono">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
@@ -100,7 +131,7 @@ export const SettingsPage: React.FC = () => {
                 value={email}
                 readOnly
                 disabled
-                helperText="Email modification is disabled in demo mode."
+                helperText="Primary email linked to this cryptographic identity."
               />
 
               <div>
@@ -109,7 +140,7 @@ export const SettingsPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value="Security Architect &bull; Vault Custodian"
+                  value="Vault Custodian &bull; Standard Operator"
                   readOnly
                   disabled
                   className="w-full px-3.5 py-2.5 rounded-lg bg-[#080B12] text-xs font-mono text-[#00D4FF] border border-[#1E293B] cursor-not-allowed opacity-80"
@@ -120,6 +151,8 @@ export const SettingsPage: React.FC = () => {
                 <Button
                   variant="primary"
                   size="md"
+                  disabled={isSaving}
+                  isLoading={isSaving}
                   onClick={() => handleSave('Profile')}
                 >
                   Save Profile Changes

@@ -43,6 +43,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     refreshUser();
+
+    const handleUnauthorized = () => {
+      setUser(null);
+      setToken(null);
+    };
+
+    window.addEventListener('cryptx:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('cryptx:unauthorized', handleUnauthorized);
   }, []);
 
   const login = async (email: string, password: string) => {

@@ -29,60 +29,82 @@ interface ActivityItem {
   hash: string;
 }
 
-const sampleActivities: ActivityItem[] = [
-  {
-    id: 'act-1',
-    name: 'annual_audit_report_2026.pdf',
-    type: 'File',
-    operation: 'Encryption',
-    time: '12 minutes ago',
-    status: 'Sealed',
-    hash: 'e3b0c442...8b55',
-  },
-  {
-    id: 'act-2',
-    name: 'financial_ledger_q4.png',
-    type: 'Image',
-    operation: 'Encryption',
-    time: '2 hours ago',
-    status: 'Sealed',
-    hash: '4a2f718c...8b1e',
-  },
-  {
-    id: 'act-3',
-    name: 'database_production_credentials.txt',
-    type: 'Text',
-    operation: 'Decryption',
-    time: '5 hours ago',
-    status: 'Verified',
-    hash: '9f81a73e...44d2',
-  },
-  {
-    id: 'act-4',
-    name: 'Root DEK Re-wrap',
-    type: 'File',
-    operation: 'Key Rotation',
-    time: 'Yesterday',
-    status: 'Completed',
-    hash: '7c12d4a9...11fc',
-  },
-];
 
 export const OverviewPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [summary, setSummary] = useState<VaultSummary | null>(null);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [categorySizes, setCategorySizes] = useState<{ images: number; docs: number; text: number }>({
+    images: 0,
+    docs: 0,
+    text: 0,
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    let isMounted = true;
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const data = await api.getVaultSummary();
-        setSummary(data);
+        const [sumRes, actRes, filesRes] = await Promise.allSettled([
+          api.getVaultSummary(),
+          api.listActivities(0, 5),
+          api.listVaultFiles(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (sumRes.status === 'fulfilled') {
+          setSummary(sumRes.value);
+        }
+
+        if (filesRes.status === 'fulfilled' && Array.isArray(filesRes.value)) {
+          let imgBytes = 0;
+          let docBytes = 0;
+          let textBytes = 0;
+          filesRes.value.forEach((f) => {
+            const cat = (f.category || '').toLowerCase();
+            const sz = f.encrypted_size || f.file_size || 0;
+            if (cat === 'image') imgBytes += sz;
+            else if (cat === 'document') docBytes += sz;
+            else textBytes += sz;
+          });
+          setCategorySizes({ images: imgBytes, docs: docBytes, text: textBytes });
+        }
+
+        if (actRes.status === 'fulfilled' && actRes.value?.items) {
+          const mapped: ActivityItem[] = actRes.value.items.map((it) => {
+            let actType: 'Text' | 'File' | 'Image' = 'File';
+            if (it.operation_type.includes('IMAGE')) actType = 'Image';
+            else if (it.operation_type.includes('TEXT')) actType = 'Text';
+
+            let actOp: 'Encryption' | 'Decryption' | 'Key Rotation' = 'Encryption';
+            if (it.operation_type.startsWith('DECRYPT')) actOp = 'Decryption';
+            else if (it.operation_type.includes('KEY')) actOp = 'Key Rotation';
+
+            return {
+              id: it.id,
+              name: it.resource_name || 'System Payload',
+              type: actType,
+              operation: actOp,
+              time: new Date(it.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              status: it.status === 'SUCCESS' ? 'Verified' : 'Completed',
+              hash: it.details ? it.details.substring(0, 16) : 'AES-GCM-SHA256',
+            };
+          });
+          setActivities(mapped);
+        }
       } catch {
-        // Fallback to initial display
+        // Fallback gracefully
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
-    fetchSummary();
+    fetchData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const formatBytes = (bytes: number) => {
@@ -91,10 +113,14 @@ export const OverviewPage: React.FC = () => {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
-  const totalFiles = summary ? summary.total_files : 12;
-  const storageStr = summary ? formatBytes(summary.total_storage_bytes) : '48.6 MB';
-  const totalOps = summary ? summary.total_operations : 148;
-  const isDemo = summary === null;
+  const totalFiles = summary ? summary.total_files : 0;
+  const totalStorage = summary ? summary.total_storage_bytes : 0;
+  const storageStr = summary ? formatBytes(summary.total_storage_bytes) : '0 B';
+  const totalOps = summary ? summary.total_operations : 0;
+
+  const imgPercent = totalStorage > 0 ? Math.round((categorySizes.images / totalStorage) * 100) : 0;
+  const docPercent = totalStorage > 0 ? Math.round((categorySizes.docs / totalStorage) * 100) : 0;
+  const textPercent = totalStorage > 0 ? Math.max(0, 100 - imgPercent - docPercent) : 0;
 
   return (
     <DashboardLayout
@@ -108,14 +134,10 @@ export const OverviewPage: React.FC = () => {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-xl sm:text-2xl font-bold text-[#F8FAFC]">
-                Welcome back, {user?.full_name || 'Mina Amjad'}
+                Welcome back, {user?.full_name || 'CryptX User'}
               </span>
-              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${
-                isDemo
-                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/25'
-                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-              }`}>
-                {isDemo ? 'Illustrative Demo Data' : 'Live Vault Telemetry'}
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded border font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/25">
+                {isLoading ? 'Connecting...' : 'Live Vault Telemetry'}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#94A3B8]">
@@ -153,7 +175,7 @@ export const OverviewPage: React.FC = () => {
             <div className="mt-3">
               <div className="text-2xl font-extrabold text-[#F8FAFC]">{totalFiles}</div>
               <div className="text-[11px] font-mono text-emerald-400 mt-1 flex items-center gap-1">
-                <span>{isDemo ? 'Illustrative Sample Count' : 'Active Vault Count'}</span>
+                <span>Active Vault Count</span>
               </div>
             </div>
           </Card>
@@ -204,7 +226,6 @@ export const OverviewPage: React.FC = () => {
           </Card>
         </div>
 
-
         {/* Middle Row: Storage Breakdown & Security Posture */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Storage Breakdown Visualization */}
@@ -214,15 +235,15 @@ export const OverviewPage: React.FC = () => {
                 <h3 className="text-base font-bold text-[#F8FAFC]">Vault Storage Distribution</h3>
                 <p className="text-xs text-[#94A3B8]">Multi-format payloads stored in cloud object repository</p>
               </div>
-              <span className="text-xs font-mono text-[#00D4FF]">Sample Registry</span>
+              <span className="text-xs font-mono text-[#00D4FF]">Live Registry</span>
             </div>
 
             {/* Segmented Progress Bar */}
             <div className="space-y-2">
               <div className="h-3 w-full rounded-full bg-[#080B12] overflow-hidden flex border border-[#1E293B]">
-                <div style={{ width: '58%' }} className="bg-[#00D4FF] h-full" title="Images: 28.2 MB" />
-                <div style={{ width: '34%' }} className="bg-[#3B82F6] h-full" title="Documents: 16.5 MB" />
-                <div style={{ width: '8%' }} className="bg-emerald-400 h-full" title="Text Payloads: 3.9 MB" />
+                <div style={{ width: `${imgPercent}%` }} className="bg-[#00D4FF] h-full transition-all duration-500" title={`Images: ${formatBytes(categorySizes.images)}`} />
+                <div style={{ width: `${docPercent}%` }} className="bg-[#3B82F6] h-full transition-all duration-500" title={`Documents: ${formatBytes(categorySizes.docs)}`} />
+                <div style={{ width: `${textPercent}%` }} className="bg-emerald-400 h-full transition-all duration-500" title={`Other: ${formatBytes(categorySizes.text)}`} />
               </div>
 
               {/* Legend */}
@@ -230,17 +251,17 @@ export const OverviewPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#00D4FF]" />
                   <span className="text-[#94A3B8]">Images:</span>
-                  <span className="text-[#F8FAFC] font-semibold">28.2 MB</span>
+                  <span className="text-[#F8FAFC] font-semibold">{formatBytes(categorySizes.images)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />
                   <span className="text-[#94A3B8]">Documents:</span>
-                  <span className="text-[#F8FAFC] font-semibold">16.5 MB</span>
+                  <span className="text-[#F8FAFC] font-semibold">{formatBytes(categorySizes.docs)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                  <span className="text-[#94A3B8]">Text:</span>
-                  <span className="text-[#F8FAFC] font-semibold">3.9 MB</span>
+                  <span className="text-[#94A3B8]">Other:</span>
+                  <span className="text-[#F8FAFC] font-semibold">{formatBytes(categorySizes.text)}</span>
                 </div>
               </div>
             </div>
@@ -248,12 +269,12 @@ export const OverviewPage: React.FC = () => {
             {/* Cloud Object Details */}
             <div className="pt-3 border-t border-[#1E293B] grid grid-cols-2 gap-4 text-xs font-mono text-[#94A3B8]">
               <div>
-                <span className="text-[#64748B] block">Cloud Host:</span>
-                <span className="text-[#F8FAFC]">Zero-Knowledge Bucket (EU-West)</span>
+                <span className="text-[#64748B] block">Vault Storage:</span>
+                <span className="text-[#F8FAFC]">Authenticated Object Store</span>
               </div>
               <div>
                 <span className="text-[#64748B] block">Tamper Protocol:</span>
-                <span className="text-emerald-400">SHA-256 Sealed Digests</span>
+                <span className="text-emerald-400">AEAD Tag & SHA-256 Digest</span>
               </div>
             </div>
           </Card>
@@ -271,19 +292,19 @@ export const OverviewPage: React.FC = () => {
             <div className="space-y-3 font-mono text-xs">
               <div className="p-2.5 rounded-lg bg-[#141D2B] border border-[#1E293B] flex items-center justify-between">
                 <span className="text-[#94A3B8]">Primary Cipher</span>
-                <span className="text-[#00D4FF] font-semibold">AES-256-GCM</span>
+                <span className="text-[#00D4FF] font-semibold">AES-256-GCM (256-bit AEAD)</span>
               </div>
               <div className="p-2.5 rounded-lg bg-[#141D2B] border border-[#1E293B] flex items-center justify-between">
                 <span className="text-[#94A3B8]">Integrity Checksum</span>
-                <span className="text-[#F8FAFC] font-semibold">SHA-256 Digests</span>
+                <span className="text-[#F8FAFC] font-semibold">SHA-256 Bit-Exact Digests</span>
               </div>
               <div className="p-2.5 rounded-lg bg-[#141D2B] border border-[#1E293B] flex items-center justify-between">
-                <span className="text-[#94A3B8]">Key Derivation</span>
-                <span className="text-[#F8FAFC] font-semibold">PBKDF2 100K iter</span>
+                <span className="text-[#94A3B8]">Password KDF</span>
+                <span className="text-[#F8FAFC] font-semibold">Argon2id (m=64MB, t=3, p=4)</span>
               </div>
               <div className="p-2.5 rounded-lg bg-[#141D2B] border border-[#1E293B] flex items-center justify-between">
-                <span className="text-[#94A3B8]">Cloud Telemetry</span>
-                <span className="text-emerald-400 font-semibold">Zero Plaintext</span>
+                <span className="text-[#94A3B8]">Key Encryption (KEK)</span>
+                <span className="text-emerald-400 font-semibold">NIST AES Key Wrap (RFC 3394)</span>
               </div>
             </div>
           </Card>
@@ -370,7 +391,7 @@ export const OverviewPage: React.FC = () => {
                 <Clock className="w-4 h-4 text-[#3B82F6]" />
                 Recent Cryptographic Activity
               </h3>
-              <p className="text-xs text-[#94A3B8]">Audit ledger sample records</p>
+              <p className="text-xs text-[#94A3B8]">Audit ledger live records</p>
             </div>
             <Link
               to="/dashboard/activity"
@@ -380,37 +401,43 @@ export const OverviewPage: React.FC = () => {
             </Link>
           </div>
 
-          <div className="divide-y divide-[#1E293B]/70 overflow-x-auto">
-            {sampleActivities.map((act) => (
-              <div key={act.id} className="py-3 flex items-center justify-between min-w-[500px]">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[#141D2B] border border-[#1E293B] text-[#00D4FF]">
-                    {act.type === 'Text' ? (
-                      <FileCode className="w-4 h-4" />
-                    ) : act.type === 'Image' ? (
-                      <ImageIcon className="w-4 h-4" />
-                    ) : (
-                      <Files className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-[#F8FAFC]">{act.name}</div>
-                    <div className="text-[11px] font-mono text-[#64748B]">
-                      {act.operation} &bull; SHA-256: {act.hash}
+          {activities.length > 0 ? (
+            <div className="divide-y divide-[#1E293B]/70 overflow-x-auto">
+              {activities.map((act) => (
+                <div key={act.id} className="py-3 flex items-center justify-between min-w-[500px]">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-[#141D2B] border border-[#1E293B] text-[#00D4FF]">
+                      {act.type === 'Text' ? (
+                        <FileCode className="w-4 h-4" />
+                      ) : act.type === 'Image' ? (
+                        <ImageIcon className="w-4 h-4" />
+                      ) : (
+                        <Files className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[#F8FAFC] truncate max-w-[280px]">{act.name}</div>
+                      <div className="text-[11px] font-mono text-[#64748B]">
+                        {act.operation} &bull; Digest: {act.hash}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-4 text-xs font-mono">
-                  <span className="text-[#94A3B8]">{act.time}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    {act.status}
-                  </span>
+                  <div className="flex items-center gap-4 text-xs font-mono">
+                    <span className="text-[#94A3B8]">{act.time}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {act.status}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-xs font-mono text-[#64748B]">
+              No cryptographic operations recorded yet. Encrypt text, files, or images to begin your audit log.
+            </div>
+          )}
         </Card>
       </div>
     </DashboardLayout>

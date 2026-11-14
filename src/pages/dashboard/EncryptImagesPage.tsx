@@ -46,6 +46,15 @@ export const EncryptImagesPage: React.FC = () => {
       return;
     }
 
+    const MAX_SIZE_MB = 50;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setOperationState((prev) => ({
+        ...prev,
+        error: `Image exceeds maximum allowed size of ${MAX_SIZE_MB}MB (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please select an image under ${MAX_SIZE_MB}MB.`,
+      }));
+      return;
+    }
+
     setSelectedImage(file);
     setSavedVaultItem(null);
     setDecryptedPreviewUrl(null);

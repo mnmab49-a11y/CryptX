@@ -19,6 +19,7 @@ import {
   Info
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from '../../router';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavItem {
   label: string;
@@ -32,7 +33,7 @@ const navItems: NavItem[] = [
   { label: 'Encrypt Text', href: '/dashboard/text', icon: <FileCode className="w-4 h-4" /> },
   { label: 'Encrypt Files', href: '/dashboard/files', icon: <Files className="w-4 h-4" /> },
   { label: 'Encrypt Images', href: '/dashboard/images', icon: <ImageIcon className="w-4 h-4" /> },
-  { label: 'My Vault', href: '/dashboard/vault', icon: <FolderLock className="w-4 h-4" />, badge: '12' },
+  { label: 'My Vault', href: '/dashboard/vault', icon: <FolderLock className="w-4 h-4" /> },
   { label: 'Activity History', href: '/dashboard/activity', icon: <History className="w-4 h-4" /> },
   { label: 'Key Management', href: '/dashboard/keys', icon: <KeyRound className="w-4 h-4" /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-4 h-4" /> },
@@ -53,11 +54,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const handleLogout = () => {
-    // Clear any local client state and route to login
+    logout();
     navigate('/login');
   };
 
@@ -124,8 +126,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <User className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-[#F8FAFC] truncate">Mina Amjad</div>
-                <div className="text-[10px] text-[#94A3B8] font-mono truncate">Security Architect</div>
+                <div className="text-xs font-bold text-[#F8FAFC] truncate">
+                  {user?.full_name || 'Authenticated User'}
+                </div>
+                <div className="text-[10px] text-[#94A3B8] font-mono truncate">
+                  {user?.email || 'Encrypted Session'}
+                </div>
               </div>
             </div>
             <button
@@ -236,16 +242,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
         </header>
 
-        {/* Phase 3 Scope Notice Banner */}
+        {/* Security Workspace Status Banner */}
         <div className="bg-[#141D2B]/90 border-b border-[#1E293B] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between text-xs text-[#94A3B8]">
           <div className="flex items-center gap-2 min-w-0">
             <Info className="w-4 h-4 text-[#00D4FF] shrink-0" />
             <span className="truncate">
-              <strong>Phase 3 Frontend Console:</strong> Displays complete dashboard and encryption tool interfaces with illustrative demo registries. Real cryptographic execution hooks to FastAPI backend in Phase 4.
+              <strong>CryptX Secure Workspace:</strong> Authenticated session active. AES-256-GCM authenticated cipher streams protect all operations.
             </span>
           </div>
-          <span className="font-mono text-[10px] text-[#00D4FF] shrink-0 ml-2 hidden sm:inline-block">
-            Phase 3 / UI Complete
+          <span className="font-mono text-[10px] text-emerald-400 shrink-0 ml-2 hidden sm:inline-block">
+            Session Active
           </span>
         </div>
 

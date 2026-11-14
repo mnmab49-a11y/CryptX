@@ -106,7 +106,7 @@ export const RegisterPage: React.FC = () => {
   return (
     <AuthLayout
       title="Create Your Secure Vault"
-      subtitle="Establish your sovereign cryptographic profile with client-side key isolation."
+      subtitle="Establish your sovereign cryptographic profile with authenticated encryption."
       authMode="register"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4 text-left">

@@ -11,7 +11,8 @@ import {
   Info,
   SlidersHorizontal,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { Card } from '../../components/ui/Card';
@@ -25,6 +26,8 @@ export const VaultPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortOrder, setSortOrder] = useState<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc');
   const [itemToDelete, setItemToDelete] = useState<VaultFileItem | null>(null);
+  const [viewingDetails, setViewingDetails] = useState<VaultFileItem | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -84,6 +87,19 @@ export const VaultPage: React.FC = () => {
       document.body.removeChild(a);
     } catch (err: any) {
       alert(`Decryption download failed: ${err.message}`);
+    }
+  };
+
+  const handleViewDetails = async (item: VaultFileItem) => {
+    setViewingDetails(item);
+    setIsLoadingDetails(true);
+    try {
+      const detailed = await api.getVaultFile(item.id);
+      setViewingDetails(detailed);
+    } catch {
+      // Keep existing item data if detail call fails
+    } finally {
+      setIsLoadingDetails(false);
     }
   };
 
@@ -246,6 +262,13 @@ export const VaultPage: React.FC = () => {
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            onClick={() => handleViewDetails(item)}
+                            className="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#00D4FF] hover:bg-[#141D2B] transition-colors"
+                            title="Inspect Cryptographic Metadata"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleDownloadDecrypted(item)}
                             className="p-1.5 rounded-lg text-[#00D4FF] hover:bg-[#141D2B] transition-colors"
                             title="Decrypt & Download File"
@@ -294,6 +317,94 @@ export const VaultPage: React.FC = () => {
                   className="bg-red-500 hover:bg-red-600 text-white"
                 >
                   {isDeleting ? 'Deleting...' : 'Delete File'}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* File Cryptographic Details Modal */}
+        {viewingDetails && (
+          <Modal
+            isOpen={!!viewingDetails}
+            onClose={() => setViewingDetails(null)}
+            title={isLoadingDetails ? 'Cryptographic File Details (Loading...)' : 'Cryptographic File Details'}
+            maxWidth="lg"
+          >
+            <div className="space-y-4 text-left font-mono text-xs">
+              <div className="p-3 rounded-lg bg-[#080B12] border border-[#1E293B] space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#94A3B8]">Original Filename:</span>
+                  <span className="text-[#F8FAFC] font-semibold">{viewingDetails.original_filename}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#94A3B8]">Internal Stored Name:</span>
+                  <span className="text-slate-400">{viewingDetails.stored_filename}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#94A3B8]">Vault File ID:</span>
+                  <span className="text-[#00D4FF]">{viewingDetails.id}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#94A3B8]">Category:</span>
+                  <span className="text-[#F8FAFC] capitalize">{viewingDetails.category} ({viewingDetails.file_type})</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-[#080B12] border border-[#1E293B] space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#94A3B8]">Original Size:</span>
+                  <span className="text-[#F8FAFC]">{formatFileSize(viewingDetails.file_size)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#94A3B8]">Encrypted Ciphertext Size:</span>
+                  <span className="text-emerald-400 font-semibold">{formatFileSize(viewingDetails.encrypted_size)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#94A3B8]">Cipher Algorithm:</span>
+                  <span className="text-[#00D4FF]">{viewingDetails.encryption_algorithm}</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-[#080B12] border border-[#1E293B] space-y-2">
+                <div>
+                  <span className="text-[#94A3B8] block mb-1">Nonce / IV (Base64):</span>
+                  <div className="p-1.5 rounded bg-[#101622] text-[#94A3B8] text-[11px] break-all select-all">
+                    {viewingDetails.nonce}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[#94A3B8] block mb-1">AEAD Authentication Tag (Base64):</span>
+                  <div className="p-1.5 rounded bg-[#101622] text-[#00D4FF] text-[11px] break-all select-all">
+                    {viewingDetails.authentication_tag}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[#94A3B8] block mb-1">SHA-256 Bit-Exact Integrity Hash:</span>
+                  <div className="p-1.5 rounded bg-[#101622] text-emerald-400 text-[11px] break-all select-all">
+                    {viewingDetails.sha256_hash}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center text-[11px] text-[#64748B]">
+                <span>Encrypted: {new Date(viewingDetails.created_at).toLocaleString()}</span>
+                <span>Last Updated: {new Date(viewingDetails.updated_at).toLocaleString()}</span>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#1E293B]">
+                <Button variant="secondary" size="sm" onClick={() => setViewingDetails(null)}>
+                  Close
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    handleDownloadDecrypted(viewingDetails);
+                  }}
+                  leftIcon={<Download className="w-3.5 h-3.5" />}
+                >
+                  Decrypt & Download
                 </Button>
               </div>
             </div>

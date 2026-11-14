@@ -9,7 +9,8 @@ import {
   Trash2,
   Info,
   Clock,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { Card } from '../../components/ui/Card';
@@ -26,89 +27,41 @@ interface AuditLog {
   shaDigest: string;
 }
 
-const sampleAuditLogs: AuditLog[] = [
-  {
-    id: 'log-101',
-    operation: 'Encryption',
-    target: 'annual_audit_report_2026.pdf',
-    timestamp: '2026-11-07 20:14:02',
-    status: 'Sealed',
-    clientIp: '192.168.1.104 [Local]',
-    shaDigest: '9f81a7...33ea',
-  },
-  {
-    id: 'log-102',
-    operation: 'Encryption',
-    target: 'financial_ledger_q4.png',
-    timestamp: '2026-11-07 18:22:19',
-    status: 'Sealed',
-    clientIp: '192.168.1.104 [Local]',
-    shaDigest: '4a2f71...88ff',
-  },
-  {
-    id: 'log-103',
-    operation: 'Decryption',
-    target: 'database_production_credentials.txt',
-    timestamp: '2026-11-07 15:45:51',
-    status: 'Verified',
-    clientIp: '192.168.1.104 [Local]',
-    shaDigest: 'e3b0c4...001a',
-  },
-  {
-    id: 'log-104',
-    operation: 'Key Rotation',
-    target: 'Vault Root Data Encryption Key (DEK #4)',
-    timestamp: '2026-11-06 12:00:00',
-    status: 'Rotated',
-    clientIp: '192.168.1.104 [Local]',
-    shaDigest: '7c12d4...11fc',
-  },
-  {
-    id: 'log-105',
-    operation: 'Deletion',
-    target: 'deprecated_token_cache.tmp',
-    timestamp: '2026-11-05 08:33:14',
-    status: 'Purged',
-    clientIp: '192.168.1.104 [Local]',
-    shaDigest: '5b1a99...442b',
-  },
-  {
-    id: 'log-106',
-    operation: 'Encryption',
-    target: 'patient_mri_scan.jpg',
-    timestamp: '2026-11-04 17:10:48',
-    status: 'Sealed',
-    clientIp: '192.168.1.104 [Local]',
-    shaDigest: '3f99aa...5521',
-  },
-];
-
 export const ActivityPage: React.FC = () => {
-  const [logs, setLogs] = useState<AuditLog[]>(sampleAuditLogs);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOp, setSelectedOp] = useState<string>('All');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLive, setIsLive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchActivities = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const res = await api.listActivities();
-      if (res.items && res.items.length > 0) {
-        const mapped: AuditLog[] = res.items.map((it) => ({
-          id: it.id.substring(0, 8),
-          operation: it.operation_type.replace('_', ' '),
-          target: it.resource_name || 'System Payload',
-          timestamp: new Date(it.created_at).toLocaleString(),
-          status: it.status === 'SUCCESS' ? 'Verified' : 'Failed',
-          clientIp: it.ip_address || '127.0.0.1 [Direct]',
-          shaDigest: it.details ? it.details.substring(0, 18) : 'AES-GCM Authenticated',
-        }));
+      if (res && Array.isArray(res.items)) {
+        const mapped: AuditLog[] = res.items.map((it) => {
+          let opDisplay = it.operation_type;
+          if (it.operation_type.startsWith('ENCRYPT')) opDisplay = 'Encryption';
+          else if (it.operation_type.startsWith('DECRYPT')) opDisplay = 'Decryption';
+          else if (it.operation_type.includes('DELETE')) opDisplay = 'Deletion';
+          else if (it.operation_type.includes('KEY')) opDisplay = 'Key Rotation';
+          else opDisplay = it.operation_type.replace(/_/g, ' ');
+
+          return {
+            id: it.id.substring(0, 8),
+            operation: opDisplay,
+            target: it.resource_name || 'System Payload',
+            timestamp: new Date(it.created_at).toLocaleString(),
+            status: it.status === 'SUCCESS' ? 'Verified' : it.status,
+            clientIp: it.ip_address || '127.0.0.1 [Direct]',
+            shaDigest: it.details ? it.details.substring(0, 32) : 'AES-GCM Authenticated',
+          };
+        });
         setLogs(mapped);
-        setIsLive(true);
       }
-    } catch {
-      // Keep sample logs if backend unreachable
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Unable to connect to activity audit trail.');
     } finally {
       setIsLoading(false);
     }
@@ -180,12 +133,8 @@ export const ActivityPage: React.FC = () => {
                 <strong className="text-[#F8FAFC] font-mono">
                   Cryptographic Audit Ledger:
                 </strong>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${
-                  isLive
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/25'
-                }`}>
-                  {isLive ? 'Live Records' : 'Illustrative Sample Records'}
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded border font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/25">
+                  Live Audit Records
                 </span>
               </div>
               Forensic tracking for all encryption, decryption, and key operations. Every transaction is authenticated and verified.
@@ -199,6 +148,14 @@ export const ActivityPage: React.FC = () => {
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
+
+        {/* Error Notification */}
+        {errorMessage && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5 text-xs text-rose-300 font-mono">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
         {/* Search & Filter Toolbar */}
         <Card className="p-4 bg-[#101622] border-[#1E293B] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">

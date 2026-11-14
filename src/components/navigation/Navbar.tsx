@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, KeyRound, Menu, X, ArrowRight, Lock } from 'lucide-react';
+import { Shield, KeyRound, Menu, X, ArrowRight, Lock, LogOut } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { NavItem } from '../../types';
 import { Link, useNavigate } from '../../router';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavbarProps {
   onOpenAuthModal?: (mode: 'login' | 'signup') => void;
@@ -20,6 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -91,28 +93,49 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
 
           {/* CTA Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-[#00D4FF] hover:bg-[#00D4FF]/10 rounded-lg border border-[#00D4FF]/25 transition-colors"
-            >
-              <span>Vault Console</span>
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<Lock className="w-4 h-4 text-[#94A3B8]" />}
-              onClick={handleLoginClick}
-            >
-              Login
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-              onClick={handleRegisterClick}
-            >
-              Get Started
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-[#00D4FF] hover:bg-[#00D4FF]/10 rounded-lg border border-[#00D4FF]/25 transition-colors"
+                >
+                  <span>Vault Console</span>
+                </Link>
+                <div className="text-xs font-mono text-[#94A3B8] px-2 py-1 bg-[#141D2B] rounded-lg border border-[#1E293B]">
+                  {user?.full_name?.split(' ')[0] || 'User'}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<LogOut className="w-3.5 h-3.5 text-[#94A3B8]" />}
+                  onClick={() => {
+                    logout();
+                    navigate('/login');
+                  }}
+                >
+                  Exit
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<Lock className="w-4 h-4 text-[#94A3B8]" />}
+                  onClick={handleLoginClick}
+                >
+                  Login
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                  onClick={handleRegisterClick}
+                >
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}

@@ -42,9 +42,11 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=r"^https:\/\/(cryptx(-[a-z0-9\-]+)?|crypt-[a-z0-9\-]+)\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition", "X-SHA256-Checksum"],
 )
 
 # Mount API v1 Routers

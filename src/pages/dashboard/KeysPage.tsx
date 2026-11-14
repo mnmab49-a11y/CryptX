@@ -25,7 +25,7 @@ export const KeysPage: React.FC = () => {
   const handleSimulateRotation = () => {
     setRotationModalOpen(false);
     setActionNotice(
-      'Key rotation request staged. In Phase 4, the KMS service will generate a new Key Encryption Key (KEK) and re-wrap all active Data Encryption Keys (DEKs) via envelope cryptography.'
+      'Notice: Server Master KEK rotation is a planned administrative capability. In the current architecture, DEKs are wrapped using the server-managed CRYPTX_MASTER_KEY via NIST AES Key Wrap (RFC 3394).'
     );
   };
 
@@ -41,9 +41,9 @@ export const KeysPage: React.FC = () => {
           <Info className="w-5 h-5 text-[#00D4FF] shrink-0 mt-0.5" />
           <div className="leading-relaxed">
             <strong className="text-[#F8FAFC] block mb-0.5 font-mono">
-              Envelope Cryptography Specification (Frontend Phase 3):
+              Key Hierarchy Architecture (Active Implementation):
             </strong>
-            No live cryptographic keys are generated, stored, or revealed in this frontend interface. The schema below documents the target Cloud KMS and PBKDF2 envelope derivation model scheduled for backend implementation in Phase 4.
+            CryptX implements two-tier envelope encryption: Each file or text payload uses a fresh 256-bit AES-GCM Data Encryption Key (DEK). The DEK is wrapped using the Server Master KEK (RFC 3394) and stored with the ciphertext. Raw DEKs are never persisted.
           </div>
         </div>
 

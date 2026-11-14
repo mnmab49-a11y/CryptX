@@ -1,20 +1,103 @@
 /// <reference types="vite/client" />
 // CryptX API Client Service
 
-function resolveApiBaseUrl(): string {
-  const envUrl = (import.meta as any).env?.VITE_API_BASE_URL?.trim();
-  if (envUrl) {
-    const cleanUrl = envUrl.replace(/\/+$/, '');
-    return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
+export const PRODUCTION_API_URL = 'https://cryptx-backend.fastapicloud.dev';
+export const LOCAL_DEV_API_URL = 'http://127.0.0.1:8000';
+
+/**
+ * Validates whether a candidate string is a well-formed, absolute HTTP/HTTPS API URL.
+ * Strictly rejects:
+ *  - Non-string or empty inputs
+ *  - JSON objects or JSON strings (e.g. root backend status {"name": "CryptX Backend", ...})
+ *  - Relative URLs (e.g. "/api/v1")
+ *  - Vercel frontend hostnames (preventing SPA loopback)
+ */
+export function isValidApiUrl(candidate: unknown): candidate is string {
+  if (typeof candidate !== 'string') {
+    return false;
   }
 
-  // Only allow localhost fallback during local development mode (vite dev server)
+  const trimmed = candidate.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  // Reject JSON responses or serialized JSON objects (e.g. root API payload)
+  if (
+    trimmed.startsWith('{') ||
+    trimmed.startsWith('[') ||
+    trimmed.includes('"name"') ||
+    trimmed.includes('"status"') ||
+    trimmed.includes('"api_v1"')
+  ) {
+    return false;
+  }
+
+  // Reject JavaScript expressions or code strings
+  if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '[object Object]') {
+    return false;
+  }
+
+  // Must begin with an explicit http:// or https:// protocol (never a relative path)
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+
+    // Reject Vercel frontend domains (API requests must target FastAPI, never the Vercel SPA)
+    if (host.endsWith('.vercel.app') || host === 'vercel.app') {
+      return false;
+    }
+
+    // Must be http or https
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Normalizes an API base URL ensuring no trailing slashes and appending '/api/v1' if omitted.
+ */
+export function normalizeApiUrl(url: string): string {
+  const clean = url.trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
+  return clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`;
+}
+
+/**
+ * Resolves the active CryptX API Base URL.
+ * Priority order:
+ * 1. Valid VITE_API_BASE_URL environment variable (from .env or build environment).
+ * 2. In local development mode (`DEV`): http://127.0.0.1:8000/api/v1.
+ * 3. In production mode (`PROD`): https://cryptx-backend.fastapicloud.dev/api/v1.
+ */
+export function resolveApiBaseUrl(): string {
+  const rawEnv = (import.meta as any).env?.VITE_API_BASE_URL;
+
+  if (isValidApiUrl(rawEnv)) {
+    return normalizeApiUrl(rawEnv);
+  }
+
+  if (rawEnv && typeof rawEnv === 'string' && rawEnv.trim() !== '') {
+    console.warn(
+      `[CryptX] Rejected invalid VITE_API_BASE_URL: "${rawEnv.substring(0, 80)}". Reverting to sanctioned API backend URL.`
+    );
+  }
+
+  // Local development fallback
   if ((import.meta as any).env?.DEV) {
-    return 'http://localhost:8000/api/v1';
+    return normalizeApiUrl(LOCAL_DEV_API_URL);
   }
 
-  // In production builds (e.g. Vercel deployment), do NOT silently fallback to localhost!
-  return '';
+  // Production fallback: Always connect directly to the FastAPI cloud backend
+  return normalizeApiUrl(PRODUCTION_API_URL);
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
@@ -125,7 +208,8 @@ class ApiService {
       );
     }
 
-    const url = `${API_BASE_URL}${endpoint}`;
+    const endpointPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${API_BASE_URL}${endpointPath}`;
     const headers = new Headers(options.headers || {});
 
     const token = this.getToken();
@@ -162,10 +246,43 @@ class ApiService {
     }
 
     if (!response.ok) {
-      const errorMsg =
-        typeof responseData === 'object' && responseData !== null && responseData.detail
-          ? responseData.detail
-          : response.statusText || 'Request failed';
+      if (response.status === 401) {
+        // Clear invalid/expired token and notify listeners
+        this.setToken(null);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('cryptx:unauthorized'));
+        }
+      }
+      let errorMsg = 'Request failed';
+      if (typeof responseData === 'object' && responseData !== null) {
+        if (typeof responseData.detail === 'string') {
+          errorMsg = responseData.detail;
+        } else if (Array.isArray(responseData.detail)) {
+          errorMsg = responseData.detail
+            .map((d: any) => {
+              if (typeof d === 'string') return d;
+              if (d && typeof d === 'object') {
+                const loc = Array.isArray(d.loc)
+                  ? d.loc.filter((x: any) => x !== 'body').join('.')
+                  : '';
+                const msg = d.msg || d.message || JSON.stringify(d);
+                return loc ? `${loc}: ${msg}` : msg;
+              }
+              return String(d);
+            })
+            .join('; ');
+        } else if (responseData.message && typeof responseData.message === 'string') {
+          errorMsg = responseData.message;
+        } else if (responseData.error && typeof responseData.error === 'string') {
+          errorMsg = responseData.error;
+        }
+      } else if (typeof responseData === 'string' && responseData.trim()) {
+        errorMsg = responseData;
+      } else if (response.statusText) {
+        errorMsg = `${response.status} ${response.statusText}`;
+      } else {
+        errorMsg = `HTTP Error ${response.status}: Request failed`;
+      }
       throw new Error(errorMsg);
     }
 
@@ -252,12 +369,24 @@ class ApiService {
     }
 
     if (!response.ok) {
+      if (response.status === 401) {
+        this.setToken(null);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('cryptx:unauthorized'));
+        }
+      }
       let errorMsg = 'Failed to decrypt file';
       try {
         const errJson = await response.json();
-        if (errJson.detail) errorMsg = errJson.detail;
+        if (typeof errJson.detail === 'string') {
+          errorMsg = errJson.detail;
+        } else if (Array.isArray(errJson.detail)) {
+          errorMsg = errJson.detail.map((d: any) => d.msg || JSON.stringify(d)).join('; ');
+        } else if (errJson.message) {
+          errorMsg = errJson.message;
+        }
       } catch {
-        errorMsg = response.statusText;
+        errorMsg = response.statusText || `HTTP Error ${response.status}`;
       }
       throw new Error(errorMsg);
     }
@@ -287,6 +416,10 @@ class ApiService {
     return this.request<VaultFileItem[]>(`/vault/files?${params.toString()}`);
   }
 
+  async getVaultFile(fileId: string): Promise<VaultFileItem> {
+    return this.request<VaultFileItem>(`/vault/files/${fileId}`);
+  }
+
   async getVaultSummary(): Promise<VaultSummary> {
     return this.request<VaultSummary>('/vault/summary');
   }
@@ -300,6 +433,21 @@ class ApiService {
   // --- Activity APIs ---
   async listActivities(skip = 0, limit = 50): Promise<ActivityListResult> {
     return this.request<ActivityListResult>(`/activity?skip=${skip}&limit=${limit}`);
+  }
+
+  // --- User Profile APIs ---
+  async updateProfile(data: { full_name?: string; email?: string }): Promise<UserProfile> {
+    return this.request<UserProfile>('/users/me', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePassword(data: { current_password: string; new_password: string }): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/users/me/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 }
 

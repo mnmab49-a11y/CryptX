@@ -40,6 +40,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://crypt-x1.vercel.app",
     ]
 
     @field_validator("JWT_SECRET_KEY")
@@ -72,17 +73,19 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> List[str]:
         if isinstance(self.CORS_ORIGINS, list):
-            return self.CORS_ORIGINS
+            return [origin.strip().rstrip('/') for origin in self.CORS_ORIGINS if origin.strip()]
         if isinstance(self.CORS_ORIGINS, str):
             clean = self.CORS_ORIGINS.strip()
             if clean.startswith("[") and clean.endswith("]"):
                 import json
                 try:
-                    return json.loads(clean)
+                    parsed = json.loads(clean)
+                    if isinstance(parsed, list):
+                        return [str(o).strip().rstrip('/') for o in parsed if str(o).strip()]
                 except Exception:
                     pass
-            return [origin.strip() for origin in clean.split(",") if origin.strip()]
-        return ["http://localhost:5173"]
+            return [origin.strip().rstrip('/') for origin in clean.split(",") if origin.strip()]
+        return ["http://localhost:5173", "https://crypt-x1.vercel.app"]
 
     model_config = SettingsConfigDict(
         env_file=(".env", "backend/.env"),
