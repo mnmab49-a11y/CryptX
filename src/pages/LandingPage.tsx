@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { FeatureItem } from '../types';
 import { Key, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from '../router';
+import { CyberMatrixBackground } from '../components/ui/CyberMatrixBackground';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -27,7 +28,10 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#080B12] text-[#F8FAFC] flex flex-col font-sans bg-grid-pattern selection:bg-[#00D4FF]/20 selection:text-[#00D4FF]">
+    <div className="min-h-screen bg-[#080B12] text-[#F8FAFC] flex flex-col font-sans bg-grid-pattern selection:bg-[#00D4FF]/20 selection:text-[#00D4FF] relative overflow-hidden">
+      {/* Interactive Cryptographic Matrix Particle Canvas */}
+      <CyberMatrixBackground />
+
       {/* Top Navigation */}
       <Navbar />
 

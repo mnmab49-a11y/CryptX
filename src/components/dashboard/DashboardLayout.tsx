@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from '../../router';
 import { useAuth } from '../../context/AuthContext';
+import { CyberMatrixBackground } from '../ui/CyberMatrixBackground';
 
 interface NavItem {
   label: string;
@@ -64,7 +65,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#080B12] text-[#F8FAFC] flex font-sans bg-grid-pattern selection:bg-[#00D4FF]/20 selection:text-[#00D4FF]">
+    <div className="min-h-screen bg-[#080B12] text-[#F8FAFC] flex font-sans bg-grid-pattern selection:bg-[#00D4FF]/20 selection:text-[#00D4FF] relative overflow-hidden">
+      {/* Interactive Cryptographic Background Animation */}
+      <CyberMatrixBackground />
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-col w-64 bg-[#101622] border-r border-[#1E293B] shrink-0 sticky top-0 h-screen z-20">
         {/* Brand Header */}

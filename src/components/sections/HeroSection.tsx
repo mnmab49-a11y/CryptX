@@ -43,7 +43,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#F8FAFC] leading-[1.12]">
               Your Data.{' '}
-              <span className="bg-gradient-to-r from-[#00D4FF] via-[#38BDF8] to-[#3B82F6] bg-clip-text text-transparent">
+              <span className="text-shimmer">
                 Your Keys.
               </span>{' '}
               Your Privacy.

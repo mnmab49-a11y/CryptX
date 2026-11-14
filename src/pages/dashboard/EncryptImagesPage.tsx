@@ -335,11 +335,15 @@ export const EncryptImagesPage: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="relative rounded-lg overflow-hidden bg-[#080B12] border border-[#1E293B] aspect-video flex items-center justify-center">
+                  <div className="relative rounded-lg overflow-hidden bg-[#080B12] border border-[#1E293B] aspect-video flex items-center justify-center group">
+                    {/* Futuristic Laser Scanner Beam */}
+                    {(operationState.inProgress || cipherPreviewUrl) && (
+                      <div className="laser-scanner-beam" />
+                    )}
                     <img
                       src={decryptedPreviewUrl || cipherPreviewUrl || previewUrl}
                       alt="Preview"
-                      className="max-h-full max-w-full object-contain"
+                      className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                     {cipherPreviewUrl && !decryptedPreviewUrl && (
                       <div className="absolute top-2 left-2 px-2.5 py-1 rounded bg-[#080B12]/90 border border-[#00D4FF] text-[#00D4FF] text-[10px] font-mono font-bold backdrop-blur-sm">

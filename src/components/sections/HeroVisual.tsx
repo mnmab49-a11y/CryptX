@@ -1,14 +1,31 @@
-import React from 'react';
-import { Shield, Lock, Cloud, FileText, Image as ImageIcon, Database, CheckCircle2, Cpu } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, Lock, Cloud, FileText, Image as ImageIcon, Database, CheckCircle2, Cpu, Sparkles } from 'lucide-react';
 
 export const HeroVisual: React.FC = () => {
+  const [hexTicker, setHexTicker] = useState('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+
+  useEffect(() => {
+    const chars = '0123456789abcdef';
+    const interval = setInterval(() => {
+      let nextHex = '';
+      for (let i = 0; i < 64; i++) {
+        nextHex += chars[Math.floor(Math.random() * chars.length)];
+      }
+      setHexTicker(nextHex);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="relative w-full max-w-lg mx-auto lg:max-w-none">
+    <div className="relative w-full max-w-lg mx-auto lg:max-w-none group">
       {/* Decorative ambient gradient backing */}
-      <div className="absolute -inset-1 bg-gradient-to-r from-[#00D4FF]/20 to-[#3B82F6]/20 rounded-2xl blur-xl opacity-50" />
+      <div className="absolute -inset-1 bg-gradient-to-r from-[#00D4FF]/30 to-[#3B82F6]/30 rounded-2xl blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-500" />
 
       {/* Main Terminal / Vault Canvas */}
-      <div className="relative bg-[#101622] border border-[#1E293B] rounded-2xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl">
+      <div className="relative bg-[#101622]/95 border border-[#1E293B] rounded-2xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl overflow-hidden cyber-card">
+        {/* Animated Laser Scanner Bar running across the terminal */}
+        <div className="laser-scanner-beam opacity-70" />
+
         {/* Top Control Bar */}
         <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#1E293B]">
           <div className="flex items-center gap-2">
@@ -49,20 +66,31 @@ export const HeroVisual: React.FC = () => {
           </div>
 
           {/* Central Cryptographic Engine */}
-          <div className="bg-gradient-to-b from-[#141D2B] to-[#101622] p-3.5 rounded-xl border border-[#00D4FF]/30 relative overflow-hidden shadow-[0_0_15px_-3px_rgba(0,212,255,0.15)] flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-mono text-[#00D4FF] font-semibold uppercase">Cipher Engine</span>
+          <div className="bg-gradient-to-b from-[#141D2B] to-[#101622] p-3.5 rounded-xl border border-[#00D4FF]/40 relative overflow-hidden shadow-[0_0_20px_-2px_rgba(0,212,255,0.25)] flex flex-col justify-between">
+            {/* Animated background glow */}
+            <div className="absolute inset-0 bg-[#00D4FF]/5 animate-pulse" />
+
+            <div className="flex items-center justify-between mb-2 relative z-10">
+              <span className="text-[11px] font-mono text-[#00D4FF] font-semibold uppercase flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-[#00D4FF] animate-pulse" />
+                Cipher Engine
+              </span>
               <Cpu className="w-4 h-4 text-[#00D4FF]" />
             </div>
-            <div className="flex flex-col items-center justify-center py-1">
-              <div className="relative flex items-center justify-center w-12 h-12 rounded-full bg-[#080B12] border border-[#00D4FF]/40 shadow-inner">
-                <Shield className="w-6 h-6 text-[#00D4FF]" />
+
+            <div className="flex flex-col items-center justify-center py-1 relative z-10">
+              <div className="relative flex items-center justify-center w-12 h-12 rounded-full bg-[#080B12] border border-[#00D4FF]/50 shadow-inner">
+                {/* Radar ripple rings */}
+                <span className="absolute inset-0 rounded-full border border-[#00D4FF]/40 animate-ping opacity-30" />
+                <span className="absolute -inset-1 rounded-full border border-[#00D4FF]/20 animate-pulse" />
+                <Shield className="w-6 h-6 text-[#00D4FF] animate-pulse" />
                 <Lock className="w-3 h-3 text-[#3B82F6] absolute" />
               </div>
-              <span className="mt-2 font-mono text-[11px] text-[#F8FAFC] font-medium">AES-256-GCM</span>
+              <span className="mt-2 font-mono text-[11px] text-[#F8FAFC] font-medium tracking-wide">AES-256-GCM</span>
               <span className="text-[9px] font-mono text-[#94A3B8]">Authenticated IV + Tag</span>
             </div>
-            <div className="mt-2 text-center text-[10px] font-mono text-[#00D4FF] bg-[#00D4FF]/10 rounded py-0.5 border border-[#00D4FF]/20">
+
+            <div className="mt-2 text-center text-[10px] font-mono text-[#00D4FF] bg-[#00D4FF]/10 rounded py-0.5 border border-[#00D4FF]/30 relative z-10">
               Isolated Keys
             </div>
           </div>
@@ -105,7 +133,8 @@ export const HeroVisual: React.FC = () => {
           </div>
           <div className="text-[11px] text-slate-400 break-all leading-tight">
             <span className="text-[#00D4FF]">Ciphertext: </span>
-            e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+            <span className="text-[#38BDF8] font-semibold">{hexTicker.substring(0, 32)}</span>
+            <span className="text-slate-500">{hexTicker.substring(32)}</span>
           </div>
           <div className="flex items-center justify-between pt-1 text-[10px] text-slate-500">
             <span>Auth Tag: 128-bit GCM MAC</span>

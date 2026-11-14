@@ -368,11 +368,13 @@ export const EncryptFilesPage: React.FC = () => {
                     </span>
                     <Badge variant="cyan" size="sm">Image Polyglot</Badge>
                   </div>
-                  <div className="rounded-xl overflow-hidden border border-[#00D4FF]/40 bg-[#080B12] shadow-lg">
+                  <div className="rounded-xl overflow-hidden border border-[#00D4FF]/40 bg-[#080B12] shadow-lg relative group">
+                    {/* Laser Scanner Beam */}
+                    <div className="laser-scanner-beam" />
                     <img
                       src={carrierPreviewUrl}
                       alt="Encrypted Carrier"
-                      className="w-full h-auto object-cover max-h-48"
+                      className="w-full h-auto object-cover max-h-48 transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                   </div>
                   <p className="text-[11px] text-[#94A3B8] leading-tight">

@@ -27,9 +27,100 @@
     linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
 }
 
+/* Dynamic moving cyber grid */
+.cyber-grid-moving {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  animation: gridMove 25s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 50px 50px; }
+}
+
 /* Restrained ambient glow */
 .ambient-glow {
-  background: radial-gradient(circle at 50% 20%, rgba(0, 212, 255, 0.06) 0%, rgba(59, 130, 246, 0.03) 35%, transparent 70%);
+  background: radial-gradient(circle at 50% 20%, rgba(0, 212, 255, 0.09) 0%, rgba(59, 130, 246, 0.04) 35%, transparent 70%);
+}
+
+/* Holographic Shimmer Text */
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    #F8FAFC 0%,
+    #00D4FF 25%,
+    #38BDF8 50%,
+    #818CF8 75%,
+    #F8FAFC 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: textShimmer 4s linear infinite;
+}
+
+@keyframes textShimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Laser Scanner Bar for Files & Images */
+.laser-scanner-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #00D4FF 50%, transparent 100%);
+  box-shadow: 0 0 15px 3px rgba(0, 212, 255, 0.8), 0 0 30px 6px rgba(0, 212, 255, 0.4);
+  pointer-events: none;
+  animation: laserScan 2.6s ease-in-out infinite;
+  z-index: 20;
+}
+
+/* Cyber Card Glow on hover */
+.cyber-card {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cyber-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), transparent, rgba(59, 130, 246, 0.2));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.cyber-card:hover::before {
+  opacity: 1;
+}
+
+/* Glowing neon ring */
+.neon-radar-ring {
+  border-radius: 50%;
+  animation: radarExpand 3s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+
+@keyframes radarExpand {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
 }
 
 /* Custom scrollbar */

@@ -30,11 +30,11 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-gradient-to-r from-[#00D4FF] to-[#3B82F6] text-[#080B12] font-semibold hover:shadow-[0_0_20px_-3px_rgba(0,212,255,0.4)] hover:brightness-110 focus:ring-[#00D4FF]',
+      'bg-gradient-to-r from-[#00D4FF] to-[#3B82F6] text-[#080B12] font-semibold hover:shadow-[0_0_25px_-2px_rgba(0,212,255,0.5)] hover:brightness-110 hover:-translate-y-0.5 focus:ring-[#00D4FF]',
     secondary:
-      'bg-[#101622] text-[#F8FAFC] border border-[#1E293B] hover:bg-[#141D2B] hover:border-[#2B3B52] focus:ring-[#3B82F6]',
+      'bg-[#101622] text-[#F8FAFC] border border-[#1E293B] hover:bg-[#141D2B] hover:border-[#00D4FF]/40 hover:-translate-y-0.5 focus:ring-[#3B82F6]',
     outline:
-      'bg-transparent text-[#F8FAFC] border border-[#1E293B] hover:border-[#00D4FF]/60 hover:text-[#00D4FF] hover:bg-[#00D4FF]/5 focus:ring-[#00D4FF]',
+      'bg-transparent text-[#F8FAFC] border border-[#1E293B] hover:border-[#00D4FF]/60 hover:text-[#00D4FF] hover:bg-[#00D4FF]/5 hover:-translate-y-0.5 focus:ring-[#00D4FF]',
     ghost:
       'bg-transparent text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#141D2B]/60 focus:ring-slate-700',
   };
