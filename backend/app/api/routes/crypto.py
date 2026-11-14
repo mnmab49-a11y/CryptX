@@ -25,6 +25,7 @@ def encrypt_text(
 ):
     try:
         result = CryptoService.encrypt_text(payload.plaintext)
+        result["version"] = "1.0"
 
         ActivityService.log_activity(
             db,
@@ -125,9 +126,6 @@ async def encrypt_file(
         # Perform real AES-256-GCM encryption
         crypto_res = CryptoService.encrypt_bytes(contents)
 
-        # Save ciphertext bytes to disk
-        stored_filename = storage_service.save_file(crypto_res["ciphertext_bytes"])
-
         # Base64 encode metadata for DB storage
         import base64
         nonce_b64 = base64.b64encode(crypto_res["nonce_bytes"]).decode("ascii")
@@ -139,6 +137,10 @@ async def encrypt_file(
         cat = category
         if content_type.startswith("image/"):
             cat = "image"
+
+        # Save ciphertext bytes to disk with standardized container extension (.img.cptx / .cptx)
+        container_suffix = ".img.cptx" if cat == "image" else ".cptx"
+        stored_filename = storage_service.save_file(crypto_res["ciphertext_bytes"], suffix=container_suffix)
 
         db_file = EncryptedFile(
             user_id=current_user.id,

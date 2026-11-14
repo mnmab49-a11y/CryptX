@@ -122,6 +122,7 @@ export interface TextEncryptPayload {
 }
 
 export interface TextEncryptResult {
+  version?: string;
   ciphertext: string;
   nonce: string;
   tag: string;

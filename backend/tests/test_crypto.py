@@ -114,3 +114,43 @@ def test_crypto_api_text_decrypt_tampered_payload(client, auth_headers):
     )
     assert dec_res.status_code == 400
     assert "tag verification failed" in dec_res.json()["detail"].lower()
+
+def test_crypto_service_aad_tamper_fails():
+    secret_text = b"Classified Payload Bound to Metadata"
+    metadata_aad = b"filename=report.pdf;version=1.0;algo=AES-256-GCM"
+
+    # Encrypt with AAD
+    result = CryptoService.encrypt_bytes(secret_text, associated_data=metadata_aad)
+
+    # Decrypt with matching AAD -> succeeds
+    decrypted = CryptoService.decrypt_bytes(
+        ciphertext=result["ciphertext_bytes"],
+        nonce=result["nonce_bytes"],
+        tag=result["tag_bytes"],
+        wrapped_dek=result["wrapped_dek_bytes"],
+        associated_data=metadata_aad,
+    )
+    assert decrypted == secret_text
+
+    # Decrypt with tampered AAD -> fails
+    tampered_aad = b"filename=report_modified.pdf;version=1.0;algo=AES-256-GCM"
+    with pytest.raises(CryptographicIntegrityError) as exc_info:
+        CryptoService.decrypt_bytes(
+            ciphertext=result["ciphertext_bytes"],
+            nonce=result["nonce_bytes"],
+            tag=result["tag_bytes"],
+            wrapped_dek=result["wrapped_dek_bytes"],
+            associated_data=tampered_aad,
+        )
+    assert "verification failed" in str(exc_info.value).lower()
+
+def test_crypto_text_response_includes_version(client, auth_headers):
+    enc_res = client.post(
+        "/api/v1/crypto/text/encrypt",
+        json={"plaintext": "Test payload with versioning", "algorithm": "AES-256-GCM"},
+        headers=auth_headers,
+    )
+    assert enc_res.status_code == 200
+    enc_data = enc_res.json()
+    assert "version" in enc_data
+    assert enc_data["version"] == "1.0"

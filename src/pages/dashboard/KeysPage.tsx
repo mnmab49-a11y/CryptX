@@ -188,6 +188,84 @@ export const KeysPage: React.FC = () => {
           </Card>
         </div>
 
+        {/* Cryptographic Algorithm Standards & Evaluation Matrix */}
+        <Card className="p-6 bg-[#101622] border-[#1E293B] space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#1E293B] gap-2">
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-[#F8FAFC] flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-[#00D4FF]" />
+                Cryptographic Algorithm Standards &amp; Architecture Roadmap
+              </h3>
+              <p className="text-xs text-[#94A3B8] mt-0.5">
+                Evaluation of modern authenticated ciphers, key exchange, and digital signatures.
+              </p>
+            </div>
+            <Badge variant="cyan" size="sm">NIST &amp; RFC Compliant</Badge>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-[#1E293B] text-[#94A3B8] bg-[#080B12]">
+                  <th className="py-2.5 px-3">ALGORITHM</th>
+                  <th className="py-2.5 px-3">PRIMARY USE CASE</th>
+                  <th className="py-2.5 px-3">STATUS IN CRYPTX</th>
+                  <th className="py-2.5 px-3">ENGINEERING ASSESSMENT</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1E293B]/60 text-slate-300">
+                <tr className="hover:bg-[#141D2B]/50 transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-[#00D4FF]">AES-256-GCM</td>
+                  <td className="py-2.5 px-3 text-[#F8FAFC]">Universal Payload AEAD</td>
+                  <td className="py-2.5 px-3"><span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">Default Primary</span></td>
+                  <td className="py-2.5 px-3 text-[#94A3B8]">Hardware-accelerated via CLMUL instruction set. 128-bit authentication tag guarantees confidentiality and integrity.</td>
+                </tr>
+                <tr className="hover:bg-[#141D2B]/50 transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-slate-200">ChaCha20-Poly1305</td>
+                  <td className="py-2.5 px-3 text-[#F8FAFC]">Mobile / ARM AEAD</td>
+                  <td className="py-2.5 px-3"><span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-semibold border border-blue-500/20">Supported Alternative</span></td>
+                  <td className="py-2.5 px-3 text-[#94A3B8]">High-speed software cipher resilient to timing attacks on hardware platforms lacking native AES extensions.</td>
+                </tr>
+                <tr className="hover:bg-[#141D2B]/50 transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-slate-200">XChaCha20-Poly1305</td>
+                  <td className="py-2.5 px-3 text-[#F8FAFC]">Extended Nonce Storage</td>
+                  <td className="py-2.5 px-3"><span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-semibold border border-purple-500/20">Roadmap Target</span></td>
+                  <td className="py-2.5 px-3 text-[#94A3B8]">192-bit extended nonce permits random nonce generation without statistical collision risk over billions of files.</td>
+                </tr>
+                <tr className="hover:bg-[#141D2B]/50 transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-slate-200">AES-256-GCM-SIV</td>
+                  <td className="py-2.5 px-3 text-[#F8FAFC]">Misuse-Resistant AEAD</td>
+                  <td className="py-2.5 px-3"><span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-semibold border border-purple-500/20">Roadmap Target</span></td>
+                  <td className="py-2.5 px-3 text-[#94A3B8]">RFC 8452 synthetic initialization vector prevents catastrophic confidentiality loss if a nonce is accidentally reused.</td>
+                </tr>
+                <tr className="hover:bg-[#141D2B]/50 transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-slate-200">HPKE / RSA-OAEP</td>
+                  <td className="py-2.5 px-3 text-[#F8FAFC]">Asymmetric Multi-User Sharing</td>
+                  <td className="py-2.5 px-3"><span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">Roadmap Target</span></td>
+                  <td className="py-2.5 px-3 text-[#94A3B8]">Enables sharing encrypted files with another user by encrypting the DEK with their public key without payload re-encryption.</td>
+                </tr>
+                <tr className="hover:bg-[#141D2B]/50 transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-slate-200">Ed25519 / RSA-PSS</td>
+                  <td className="py-2.5 px-3 text-[#F8FAFC]">Digital Authenticity &amp; Signatures</td>
+                  <td className="py-2.5 px-3"><span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">Roadmap Target</span></td>
+                  <td className="py-2.5 px-3 text-[#94A3B8]">Provides cryptographic non-repudiation, mathematically proving an encrypted object originated from its registered owner.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Cryptographic Anti-Patterns Box */}
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-2 text-xs">
+            <div className="flex items-center gap-2 font-bold text-rose-400">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>Strictly Excluded &amp; Insecure Cryptographic Anti-Patterns</span>
+            </div>
+            <p className="text-[#94A3B8] leading-relaxed">
+              In accordance with strict security engineering standards, CryptX strictly prohibits <strong>AES-ECB mode</strong> (leaks plaintext patterns), unauthenticated <strong>AES-CBC without HMAC</strong> (vulnerable to padding oracle attacks), and toy &ldquo;pixel shuffling / chaotic map&rdquo; visual scramblers which provide zero mathematical security.
+            </p>
+          </div>
+        </Card>
+
         {/* Key Rotation Simulation Modal */}
         <Modal
           isOpen={rotationModalOpen}
@@ -232,7 +310,7 @@ export const KeysPage: React.FC = () => {
               </span>
             </div>
             <p>
-              In Phase 4, your Recovery Kit will export a 24-word cryptographic BIP-39 mnemonic seed capable of reconstructing your Master Key in the event of credential loss.
+              Your Recovery Kit exports an emergency cryptographic recovery passphrase capable of reconstructing your Master Key in the event of credential loss.
             </p>
             <div className="pt-2 flex justify-end">
               <Button variant="secondary" size="sm" onClick={() => setRecoveryModalOpen(false)}>

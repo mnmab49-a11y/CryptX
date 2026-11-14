@@ -5,6 +5,7 @@ class TextEncryptRequest(BaseModel):
     algorithm: str = Field("AES-256-GCM")
 
 class TextEncryptResponse(BaseModel):
+    version: str = "1.0"
     ciphertext: str       # base64 encoded ciphertext
     nonce: str            # base64 encoded 96-bit nonce
     tag: str              # base64 encoded 128-bit authentication tag

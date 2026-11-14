@@ -342,6 +342,12 @@ export const VaultPage: React.FC = () => {
                   <span className="text-slate-400">{viewingDetails.stored_filename}</span>
                 </div>
                 <div className="flex justify-between items-center">
+                  <span className="text-[#94A3B8]">Container Format:</span>
+                  <span className="text-emerald-400 font-semibold">
+                    {viewingDetails.category === 'image' ? '.img.cptx (Byte-Exact Lossless)' : '.cptx (Versioned Binary Stream)'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
                   <span className="text-[#94A3B8]">Vault File ID:</span>
                   <span className="text-[#00D4FF]">{viewingDetails.id}</span>
                 </div>
