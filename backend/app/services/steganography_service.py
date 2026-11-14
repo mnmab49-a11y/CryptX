@@ -11,20 +11,29 @@ MARKER_END = b"<<</CPTX_CARRIER_V1>>>"
 class SteganographyService:
     @staticmethod
     def is_carrier_image(data: bytes) -> bool:
-        """Check if binary data contains a CryptX Steganographic Carrier container."""
-        return MARKER_START in data and MARKER_END in data
+        """Check if binary data contains a CryptX Steganographic Carrier container or sealed envelope."""
+        if MARKER_START in data and MARKER_END in data:
+            return True
+        stripped = data.strip()
+        if stripped.startswith(b"{") and b"ciphertext" in stripped:
+            return True
+        return False
 
     @staticmethod
     def extract_payload(data: bytes) -> Optional[bytes]:
-        """Extract encapsulated cryptographic payload from a carrier image."""
+        """Extract encapsulated cryptographic payload from a carrier image or envelope."""
         start_idx = data.find(MARKER_START)
-        if start_idx == -1:
-            return None
-        start_pos = start_idx + len(MARKER_START)
-        end_idx = data.find(MARKER_END, start_pos)
-        if end_idx == -1:
-            return None
-        return data[start_pos:end_idx]
+        if start_idx != -1:
+            start_pos = start_idx + len(MARKER_START)
+            end_idx = data.find(MARKER_END, start_pos)
+            if end_idx != -1:
+                return data[start_pos:end_idx]
+
+        stripped = data.strip()
+        if stripped.startswith(b"{") and b"ciphertext" in stripped:
+            return stripped
+
+        return None
 
     @staticmethod
     def create_file_carrier_image(

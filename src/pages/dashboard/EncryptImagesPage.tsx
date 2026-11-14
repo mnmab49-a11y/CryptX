@@ -132,24 +132,49 @@ export const EncryptImagesPage: React.FC = () => {
           error: null,
         });
       } else {
-        if (!savedVaultItem && selectedImage) {
-          const { blob, filename } = await api.decryptCarrierFile(selectedImage);
-          const url = URL.createObjectURL(blob);
-          setDecryptedPreviewUrl(url);
-          setCipherPreviewUrl(null);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setOperationState({
-            inProgress: false,
-            completed: true,
-            message: `Decoy Cover Image decrypted! Restored original secret photo "${filename}" losslessly with 100% SHA-256 match.`,
-            error: null,
-          });
-          return;
+        if (selectedImage) {
+          try {
+            const { blob, filename } = await api.decryptCarrierFile(selectedImage);
+            const url = URL.createObjectURL(blob);
+            setDecryptedPreviewUrl(url);
+            setCipherPreviewUrl(null);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setOperationState({
+              inProgress: false,
+              completed: true,
+              message: `Decoy Cover Image decrypted! Restored original secret photo "${filename}" losslessly with 100% SHA-256 match.`,
+              error: null,
+            });
+            return;
+          } catch (carrierErr: any) {
+            if (savedVaultItem) {
+              const { blob, filename } = await api.decryptFileBlob(savedVaultItem.id);
+              const url = URL.createObjectURL(blob);
+              setDecryptedPreviewUrl(url);
+              setCipherPreviewUrl(null);
+
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+
+              setOperationState({
+                inProgress: false,
+                completed: true,
+                message: 'Image decrypted! Lossless bytes verified with SHA-256 checksum.',
+                error: null,
+              });
+              return;
+            }
+            throw carrierErr;
+          }
         }
 
         if (savedVaultItem) {
@@ -174,7 +199,7 @@ export const EncryptImagesPage: React.FC = () => {
           return;
         }
 
-        throw new Error('Please select an encrypted Visual Cipher Image (.png) or encrypt an image first.');
+        throw new Error('Please select an encrypted Decoy Cover Image (.png) or image file first.');
       }
     } catch (err: any) {
       setOperationState({
@@ -425,7 +450,8 @@ export const EncryptImagesPage: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="md"
-                  disabled={!savedVaultItem || operationState.inProgress}
+                  disabled={(!selectedImage && !savedVaultItem) || operationState.inProgress}
+                  isLoading={operationState.inProgress && !cipherPreviewUrl}
                   leftIcon={<Unlock className="w-4 h-4" />}
                   onClick={() => handleAction('decrypt')}
                 >
@@ -495,7 +521,7 @@ export const EncryptImagesPage: React.FC = () => {
                 <Button
                   variant="outline"
                   size="md"
-                  disabled={!savedVaultItem}
+                  disabled={!savedVaultItem && !selectedImage}
                   leftIcon={<Download className="w-4 h-4" />}
                   className="w-full justify-center"
                   onClick={() => handleAction('decrypt')}

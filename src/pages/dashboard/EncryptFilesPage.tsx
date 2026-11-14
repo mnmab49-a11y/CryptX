@@ -110,39 +110,42 @@ export const EncryptFilesPage: React.FC = () => {
           error: null,
         });
       } else {
-        // Direct Steganographic Carrier image decryption
-        if (selectedFile && (selectedFile.name.endsWith('.png') || selectedFile.type.includes('image'))) {
-          const { blob, filename } = await api.decryptCarrierFile(selectedFile);
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          setOperationState({
-            inProgress: false,
-            completed: true,
-            message: `Carrier image verified! Extracted original payload: "${filename}". Downloaded to disk.`,
-            error: null,
-          });
-          return;
+        // Try direct Steganographic Carrier image or envelope decryption
+        if (selectedFile) {
+          try {
+            const { blob, filename } = await api.decryptCarrierFile(selectedFile);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            setOperationState({
+              inProgress: false,
+              completed: true,
+              message: `Carrier verified! Extracted original payload: "${filename}". Downloaded to disk.`,
+              error: null,
+            });
+            return;
+          } catch (carrierErr: any) {
+            // If carrier extraction fails and we have a vault item, try vault download
+            if (savedVaultItem) {
+              await handleDownloadDecrypted(savedVaultItem.id);
+              setOperationState({
+                inProgress: false,
+                completed: true,
+                message: `Decryption verified! Authentication tag confirmed. File downloaded to disk.`,
+                error: null,
+              });
+              return;
+            }
+            throw carrierErr;
+          }
         }
 
-        // Vault-based decryption
-        if (savedVaultItem) {
-          await handleDownloadDecrypted(savedVaultItem.id);
-          setOperationState({
-            inProgress: false,
-            completed: true,
-            message: `Decryption verified! Authentication tag confirmed. File downloaded to disk.`,
-            error: null,
-          });
-          return;
-        }
-
-        throw new Error('Please select an encrypted Carrier Image (.png) to extract, or encrypt a file first.');
+        throw new Error('Please select an encrypted Carrier Image (.png) or encrypted file first.');
       }
     } catch (err: any) {
       setOperationState({
@@ -324,7 +327,8 @@ export const EncryptFilesPage: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="md"
-                  disabled={!savedVaultItem || operationState.inProgress}
+                  disabled={!selectedFile || operationState.inProgress}
+                  isLoading={operationState.inProgress}
                   leftIcon={<Unlock className="w-4 h-4" />}
                   onClick={() => handleAction('decrypt')}
                 >
@@ -416,12 +420,12 @@ export const EncryptFilesPage: React.FC = () => {
                 <Button
                   variant="outline"
                   size="md"
-                  disabled={!savedVaultItem}
+                  disabled={!savedVaultItem && !selectedFile}
                   leftIcon={<Download className="w-4 h-4" />}
                   className="w-full justify-center"
-                  onClick={() => savedVaultItem && handleDownloadDecrypted(savedVaultItem.id)}
+                  onClick={() => handleAction('decrypt')}
                 >
-                  Decrypt &amp; Download Raw File
+                  Decrypt &amp; Download Original File
                 </Button>
               </div>
 
