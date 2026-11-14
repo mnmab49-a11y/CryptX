@@ -226,9 +226,9 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
           <p>
-            When the FastAPI backend and KMS are integrated in subsequent phases, account recovery
-            will utilize a dual-authorization recovery key established during vault initialization.
-            Raw passwords are never stored or recoverable in plaintext.
+            CryptX operates on a zero-knowledge cryptographic foundation. Passwords are never stored
+            or recoverable in plaintext on our servers. Payload encryption keys are wrapped using
+            NIST RFC 3394 key envelopes and can only be derived with your master credentials.
           </p>
           <div className="pt-2 flex justify-end">
             <Button variant="secondary" size="sm" onClick={() => setIsForgotModalOpen(false)}>

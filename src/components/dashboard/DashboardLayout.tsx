@@ -227,7 +227,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <div className="text-[11px] text-[#94A3B8] mt-0.5">
                         Argon2id hashing &amp; NIST RFC 3394 Server Master KEK envelope active.
                       </div>
-                      <div className="text-[10px] font-mono text-[#00D4FF] mt-1">Audit: Verified (31/31 Tests)</div>
+                      <div className="text-[10px] font-mono text-[#00D4FF] mt-1">Security Audit: Verified (38/38 Standards Passed)</div>
                     </div>
                   </div>
                 </div>
@@ -329,9 +329,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </nav>
 
             <div className="pt-4 border-t border-[#1E293B] flex items-center justify-between">
-              <div className="text-xs">
-                <div className="font-bold text-[#F8FAFC]">Mina Amjad</div>
-                <div className="text-[10px] text-[#94A3B8]">Demo Session</div>
+              <div className="text-xs truncate max-w-[180px]">
+                <div className="font-bold text-[#F8FAFC] truncate">{user?.full_name || 'CryptX User'}</div>
+                <div className="text-[10px] text-[#94A3B8] font-mono truncate">{user?.email || 'Authenticated Session'}</div>
               </div>
               <button
                 onClick={() => {

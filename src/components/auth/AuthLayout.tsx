@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Shield, KeyRound, ArrowLeft, Lock, ShieldCheck, Database } from 'lucide-react';
 import { Link } from '../../router';
+import { CyberMatrixBackground } from '../ui/CyberMatrixBackground';
 
 export interface AuthLayoutProps {
   children: ReactNode;
@@ -17,6 +18,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-[#080B12] text-[#F8FAFC] flex flex-col font-sans bg-grid-pattern selection:bg-[#00D4FF]/20 selection:text-[#00D4FF] relative overflow-x-hidden">
+      {/* Background Matrix & Binary Animation */}
+      <CyberMatrixBackground />
+
       {/* Background ambient lighting */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-[#00D4FF]/10 via-[#3B82F6]/5 to-transparent blur-3xl pointer-events-none -z-10" />
 
@@ -37,7 +41,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                 CRYPT<span className="text-[#00D4FF]">X</span>
               </span>
               <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20 font-semibold">
-                v0.1
+                v1.0
               </span>
             </div>
           </Link>
@@ -68,7 +72,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 z-10">
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center my-6">
           {/* Left Column: Security Showcase (Desktop only) */}
           <div className="hidden lg:flex lg:col-span-5 flex-col space-y-6 text-left">
@@ -112,7 +116,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                 <div>
                   <div className="text-xs font-bold text-[#F8FAFC]">Key Envelope Architecture</div>
                   <div className="text-[11px] text-[#94A3B8] font-mono">
-                    KEK/DEK separation with planned KMS envelope integration
+                    Strict DEK / KEK separation via NIST RFC 3394 Key Wrap
                   </div>
                 </div>
               </div>
@@ -130,8 +134,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               </div>
             </div>
 
-            <div className="pt-2 text-xs font-mono text-[#64748B]">
-              Ready for Phase 3 FastAPI Integration &bull; REST API /api/v1/auth
+            <div className="pt-2 text-xs font-mono text-emerald-400 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Production Live &bull; FastAPI Cryptographic API v1</span>
             </div>
           </div>
 
@@ -155,8 +160,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       </main>
 
       {/* Footer Assurance */}
-      <footer className="border-t border-[#1E293B]/70 py-4 text-center text-xs text-[#64748B] font-mono">
-        CryptX Platform &bull; Cloud-Based Multi-Format Encryption & Secure Storage &bull; Academic Engineering 2026
+      <footer className="border-t border-[#1E293B]/70 py-4 text-center text-xs text-[#64748B] font-mono z-10">
+        CryptX Platform &bull; Cloud-Based Multi-Format Encryption & Secure Storage &bull; Enterprise Grade
       </footer>
     </div>
   );

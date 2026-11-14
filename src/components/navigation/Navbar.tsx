@@ -69,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
                   CRYPT<span className="text-[#00D4FF]">X</span>
                 </span>
                 <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20 font-semibold">
-                  v0.1
+                  v1.0
                 </span>
               </div>
               <span className="text-[10px] text-[#94A3B8] tracking-widest uppercase font-mono hidden sm:inline-block">

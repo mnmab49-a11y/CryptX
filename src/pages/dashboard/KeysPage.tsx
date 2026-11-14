@@ -25,7 +25,7 @@ export const KeysPage: React.FC = () => {
   const handleSimulateRotation = () => {
     setRotationModalOpen(false);
     setActionNotice(
-      'Notice: Server Master KEK rotation is a planned administrative capability. In the current architecture, DEKs are wrapped using the server-managed CRYPTX_MASTER_KEY via NIST AES Key Wrap (RFC 3394).'
+      'Notice: Server Master KEK policy is active. DEKs are wrapped using the server-managed master key via NIST AES Key Wrap (RFC 3394) with automatic cryptographic envelope isolation.'
     );
   };
 

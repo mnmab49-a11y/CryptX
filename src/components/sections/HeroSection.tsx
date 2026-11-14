@@ -51,8 +51,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* Supporting Text */}
             <p className="text-lg sm:text-xl text-[#94A3B8] max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
-              Protect your digital world with powerful encryption and secure cloud storage.
-              Encrypt text, files, and images with confidence.
+              Protect your mission-critical data with military-grade authenticated encryption.
+              Seamlessly secure confidential text, documents, and visual media with zero plaintext exposure.
             </p>
 
             {/* CTA Buttons */}

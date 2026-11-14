@@ -88,7 +88,7 @@ export const SettingsPage: React.FC = () => {
         {/* Tab Navigation */}
         <div className="flex items-center gap-2 border-b border-[#1E293B] pb-1 overflow-x-auto">
           {[
-            { id: 'profile', label: 'Profile Profile', icon: <User className="w-4 h-4" /> },
+            { id: 'profile', label: 'Profile Details', icon: <User className="w-4 h-4" /> },
             { id: 'security', label: 'Security Protocols', icon: <Shield className="w-4 h-4" /> },
             { id: 'appearance', label: 'Appearance', icon: <Lock className="w-4 h-4" /> },
             { id: 'account', label: 'Vault Data & Account', icon: <HardDrive className="w-4 h-4" /> },

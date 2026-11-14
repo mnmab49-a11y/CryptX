@@ -40,7 +40,7 @@ export const Footer: React.FC<FooterProps> = ({
 
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#101622] border border-[#1E293B] text-xs font-mono text-[#94A3B8]">
               <Lock className="w-3.5 h-3.5 text-[#00D4FF]" />
-              <span>Tagline: &ldquo;Your Data. Your Keys. Your Privacy.&rdquo;</span>
+              <span className="text-[#F8FAFC] font-medium">&ldquo;Your Data. Your Keys. Your Privacy.&rdquo;</span>
             </div>
           </div>
 
