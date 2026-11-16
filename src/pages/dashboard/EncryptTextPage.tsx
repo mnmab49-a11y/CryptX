@@ -390,20 +390,50 @@ export const EncryptTextPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Algorithm Specs Box */}
+              {/* Dynamic Algorithm Specs Box */}
               <div className="p-3.5 rounded-xl bg-[#141D2B] border border-[#1E293B] space-y-2 text-xs font-mono">
                 <div className="flex items-center justify-between text-[#F8FAFC] pb-1 border-b border-[#1E293B]">
                   <span className="flex items-center gap-1.5">
                     <Cpu className="w-3.5 h-3.5 text-[#00D4FF]" />
                     Engine Specification
                   </span>
-                  <Badge variant="emerald" size="sm">Active Engine</Badge>
+                  <Badge variant={keyMode === 'custom' ? 'cyan' : 'emerald'} size="sm">
+                    {keyMode === 'custom' ? 'Custom Key Mode' : 'Server KEK Mode'}
+                  </Badge>
                 </div>
                 <div className="space-y-1 text-[#94A3B8] text-[11px]">
-                  <div>Cipher: Authenticated AES-256-GCM</div>
-                  <div>IV Length: 96 bits (crypto_random)</div>
-                  <div>MAC Tag: 128 bits (Tamper verification)</div>
-                  <div>Key Wrap: NIST RFC 3394 Server KEK</div>
+                  <div>
+                    Cipher:{' '}
+                    <span className="text-[#F8FAFC]">
+                      {algorithm === 'CHACHA20-POLY1305'
+                        ? 'ChaCha20-Poly1305 (RFC 8439 Stream AEAD)'
+                        : algorithm === 'AES-256-CBC'
+                        ? 'AES-256-CBC + HMAC-SHA256 (Encrypt-then-MAC)'
+                        : 'AES-256-GCM (NIST SP 800-38D AEAD)'}
+                    </span>
+                  </div>
+                  <div>
+                    IV/Nonce:{' '}
+                    <span className="text-[#F8FAFC]">
+                      {algorithm === 'AES-256-CBC' ? '128 bits (Random IV)' : '96 bits (CSPRNG Nonce)'}
+                    </span>
+                  </div>
+                  <div>
+                    Authentication:{' '}
+                    <span className="text-[#F8FAFC]">
+                      {algorithm === 'AES-256-CBC'
+                        ? '256-bit HMAC-SHA256'
+                        : '128-bit MAC Tag (Tamper Verification)'}
+                    </span>
+                  </div>
+                  <div>
+                    Key Source:{' '}
+                    <span className="text-[#F8FAFC]">
+                      {keyMode === 'custom'
+                        ? 'User Passphrase (PBKDF2-HMAC-SHA256, 100k rounds, 16B salt)'
+                        : 'NIST RFC 3394 Server Master KEK Envelope'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </Card>

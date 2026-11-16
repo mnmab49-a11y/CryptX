@@ -227,7 +227,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <div className="text-[11px] text-[#94A3B8] mt-0.5">
                         Argon2id hashing &amp; NIST RFC 3394 Server Master KEK envelope active.
                       </div>
-                      <div className="text-[10px] font-mono text-[#00D4FF] mt-1">Security Audit: Verified (38/38 Standards Passed)</div>
+                      <div className="text-[10px] font-mono text-[#00D4FF] mt-1">Security Audit: Verified (38/38 Automated Tests Passed)</div>
                     </div>
                   </div>
                 </div>

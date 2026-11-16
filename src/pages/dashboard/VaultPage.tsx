@@ -127,7 +127,7 @@ export const VaultPage: React.FC = () => {
   return (
     <DashboardLayout
       pageTitle="My Vault Registry"
-      pageDescription="Encrypted cloud object management with bit-exact integrity tracking and access controls."
+      pageDescription="Encrypted payload management with bit-exact integrity tracking and access controls."
       breadcrumbs={['Storage', 'My Vault']}
     >
       <div className="space-y-6 text-left max-w-6xl">
@@ -137,7 +137,7 @@ export const VaultPage: React.FC = () => {
             <Info className="w-5 h-5 text-[#00D4FF] shrink-0 mt-0.5" />
             <div className="leading-relaxed">
               <strong className="text-[#F8FAFC] block mb-0.5 font-mono">
-                Authenticated Cloud Storage Vault:
+                Authenticated Cryptographic Vault Storage:
               </strong>
               Files displayed here are stored as <strong>AES-256-GCM ciphertext</strong>. Clicking Decrypt verifies authentication tags in real-time before streaming original plaintext to your device.
             </div>

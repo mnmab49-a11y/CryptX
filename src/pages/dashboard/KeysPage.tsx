@@ -115,7 +115,7 @@ export const KeysPage: React.FC = () => {
                 <span className="text-[10px] font-mono text-[#3B82F6] uppercase tracking-wider font-bold">
                   Tier 2 &bull; Wrapping Layer
                 </span>
-                <Badge variant="blue" size="sm">Cloud KMS</Badge>
+                <Badge variant="blue" size="sm">Server KEK</Badge>
               </div>
               <h4 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
                 <Lock className="w-4 h-4 text-[#3B82F6]" />

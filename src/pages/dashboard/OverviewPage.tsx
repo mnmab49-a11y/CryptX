@@ -233,7 +233,7 @@ export const OverviewPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-[#F8FAFC]">Vault Storage Distribution</h3>
-                <p className="text-xs text-[#94A3B8]">Multi-format payloads stored in cloud object repository</p>
+                <p className="text-xs text-[#94A3B8]">Multi-format payloads stored in secure cryptographic vault storage</p>
               </div>
               <span className="text-xs font-mono text-[#00D4FF]">Live Registry</span>
             </div>
