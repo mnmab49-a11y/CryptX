@@ -78,20 +78,19 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <div className="hidden lg:flex lg:col-span-5 flex-col space-y-6 text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/25 w-fit">
               <Lock className="w-3.5 h-3.5" />
-              Zero Plaintext Exposure
+              Server-Side Envelope Encryption
             </div>
 
             <div className="space-y-3">
               <h2 className="text-3xl font-extrabold text-[#F8FAFC] tracking-tight leading-tight">
-                Your Keys Control <br />
+                Authenticated Cryptography <br />
                 <span className="bg-gradient-to-r from-[#00D4FF] to-[#3B82F6] bg-clip-text text-transparent">
-                  Your Digital Sovereignty.
+                  For Secure Cloud Storage.
                 </span>
               </h2>
               <p className="text-sm text-[#94A3B8] leading-relaxed">
-                CryptX decouples user authentication from data decryption. Master keys are
-                derived using memory-hard key derivation functions, ensuring unencrypted files
-                never exist on remote cloud storage.
+                CryptX protects your data with AES-256-GCM authenticated cipher streams and
+                NIST RFC 3394 envelope encryption, ensuring files are stored in opaque sealed form.
               </p>
             </div>
 
@@ -126,7 +125,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   <Database className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-[#F8FAFC]">Tamper-Proof Ledger</div>
+                  <div className="text-xs font-bold text-[#F8FAFC]">Cryptographic Audit Logging</div>
                   <div className="text-[11px] text-[#94A3B8] font-mono">
                     SHA-256 pre-storage cryptographic verification
                   </div>

@@ -120,7 +120,7 @@ export const ActivityPage: React.FC = () => {
   return (
     <DashboardLayout
       pageTitle="Cryptographic Audit Trail"
-      pageDescription="Immutable ledger of operations, key activations, and tamper verification records."
+      pageDescription="Forensic audit trail of operations, key activations, and tamper verification records."
       breadcrumbs={['Security', 'Activity History']}
     >
       <div className="space-y-6 text-left max-w-6xl">
@@ -131,7 +131,7 @@ export const ActivityPage: React.FC = () => {
             <div className="leading-relaxed">
               <div className="flex items-center gap-2 mb-0.5">
                 <strong className="text-[#F8FAFC] font-mono">
-                  Cryptographic Audit Ledger:
+                  Cryptographic Audit Log:
                 </strong>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded border font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/25">
                   Live Audit Records
@@ -143,7 +143,7 @@ export const ActivityPage: React.FC = () => {
           <button
             onClick={fetchActivities}
             className="p-1.5 rounded-lg bg-[#101622] hover:bg-[#1E293B] text-[#00D4FF] border border-[#1E293B] transition-colors shrink-0"
-            title="Refresh Ledger"
+            title="Refresh Audit Log"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>

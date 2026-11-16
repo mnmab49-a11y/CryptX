@@ -105,7 +105,7 @@ export const KeysPage: React.FC = () => {
                 Protected and hashed using <strong>Argon2id</strong> ($m=65536, t=3, p=4$) with high-entropy cryptographic salt.
               </p>
               <div className="pt-2 border-t border-[#1E293B]/60 text-[11px] font-mono text-slate-400">
-                Isolation: Client RAM Only &bull; Never Persisted
+                Isolation: Password Derived via Argon2id &bull; Salted Hash Persisted
               </div>
             </div>
 
@@ -174,16 +174,16 @@ export const KeysPage: React.FC = () => {
           <Card className="p-6 bg-[#101622] border-[#1E293B] space-y-3">
             <div className="flex items-center gap-2 text-base font-bold text-[#F8FAFC]">
               <ShieldCheck className="w-4 h-4 text-amber-400" />
-              Sovereign Key Recovery Philosophy
+              Account Security &amp; Recovery Architecture
             </div>
             <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              Because CryptX never stores your master password in plaintext, conventional &ldquo;reset my password&rdquo; email links cannot decrypt your files.
+              Because CryptX hashes your master password using memory-hard Argon2id, standard reset links cannot inspect or decrypt sealed vaults.
             </p>
             <p className="text-xs text-[#94A3B8] leading-relaxed">
-              Account recovery relies upon an emergency <strong>Recovery Kit</strong> generated during vault initialization, utilizing split-key secret sharing so you retain total custody over your assets.
+              Account recovery relies upon policy-governed key envelopes, ensuring unencrypted DEKs are protected under the server Master KEK hierarchy.
             </p>
             <div className="p-3 rounded-lg bg-[#080B12] border border-[#1E293B] text-[11px] font-mono text-slate-300">
-              Zero-Knowledge &bull; Mathematical Proof of Ownership
+              Cryptographic Policy &bull; Dual-Tier Envelope Architecture
             </div>
           </Card>
         </div>
