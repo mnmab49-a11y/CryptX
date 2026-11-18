@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import settings
-from app.core.database import init_db
+from app.core.database import engine, init_db
 from app.services.storage_service import storage_service
 from app.api.routes import (
     auth_router,
@@ -68,8 +70,19 @@ def root():
 
 @app.get("/health", tags=["Health"])
 def health_check():
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        logger.exception("Database health check failed")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "unhealthy", "database": "unavailable"},
+        )
+
     return {
         "status": "healthy",
         "database": "connected",
+        "database_engine": engine.dialect.name,
         "encryption_engine": "AES-256-GCM (Hardware/Software AEAD)",
     }
